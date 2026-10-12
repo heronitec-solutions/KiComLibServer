@@ -1,0 +1,88 @@
+.diff-stage {
+  position: relative;
+  min-height: 28rem;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: #0b1220;
+  cursor: grab;
+  touch-action: none;
+}
+
+.diff-busy {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: rgba(11, 18, 32, 0.78);
+  color: #d1d5db;
+  font-size: 0.875rem;
+}
+
+.diff-spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 3px solid rgba(148, 163, 184, 0.35);
+  border-top-color: #60a5fa;
+  border-radius: 9999px;
+  animation: diff-spin 0.8s linear infinite;
+}
+
+@keyframes diff-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diff-spinner {
+    animation: none;
+  }
+}
+
+.diff-canvas {
+  position: relative;
+  width: 100%;
+  transform-origin: 0 0;
+}
+
+.diff-base,
+.diff-layer,
+.diff-stage img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.diff-base {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.diff-layer {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.9));
+}
+
+.diff-layer-added { filter: drop-shadow(0 0 3px #16a34a); }
+.diff-layer-removed { filter: drop-shadow(0 0 3px #dc2626); }
+.diff-layer-changed { filter: drop-shadow(0 0 3px #ea580c); }
+.diff-layer-moved { filter: drop-shadow(0 0 3px #2563eb); }
+
+.diff-mark {
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  margin: -0.5rem 0 0 -0.5rem;
+  border: 2px solid #facc15;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.25);
+  pointer-events: none;
+}

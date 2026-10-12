@@ -1,0 +1,8 @@
+<div class="product-image-frame" [ngClass]="frameClass">
+  @if (src) {
+    <img [src]="src" [alt]="alt" />
+  }
+  @if (!src && settled) {
+    <span class="product-image-empty">No image</span>
+  }
+</div>

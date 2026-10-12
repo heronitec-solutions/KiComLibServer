@@ -1,0 +1,139 @@
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+// Palette mirrored from the Tailwind `blue` scale used by the design so that
+// Angular Material widgets and Tailwind utility classes resolve to the same hues.
+$kicomlib-blue: (
+  50: #eff6ff,
+  100: #dbeafe,
+  200: #bfdbfe,
+  300: #93c5fd,
+  400: #60a5fa,
+  500: #3b82f6,
+  600: #2563eb,
+  700: #1d4ed8,
+  800: #1e40af,
+  900: #1e3a8a,
+  A100: #93c5fd,
+  A200: #60a5fa,
+  A400: #3b82f6,
+  A700: #1d4ed8,
+  contrast: (
+    50: rgba(0, 0, 0, 0.87),
+    100: rgba(0, 0, 0, 0.87),
+    200: rgba(0, 0, 0, 0.87),
+    300: rgba(0, 0, 0, 0.87),
+    400: #ffffff,
+    500: #ffffff,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff,
+    A100: rgba(0, 0, 0, 0.87),
+    A200: #ffffff,
+    A400: #ffffff,
+    A700: #ffffff,
+  ),
+);
+
+$kicomlib-red: (
+  50: #fef2f2,
+  100: #fee2e2,
+  200: #fecaca,
+  300: #fca5a5,
+  400: #f87171,
+  500: #ef4444,
+  600: #dc2626,
+  700: #b91c1c,
+  800: #991b1b,
+  900: #7f1d1d,
+  A100: #fca5a5,
+  A200: #f87171,
+  A400: #ef4444,
+  A700: #b91c1c,
+  contrast: (
+    50: rgba(0, 0, 0, 0.87),
+    100: rgba(0, 0, 0, 0.87),
+    200: rgba(0, 0, 0, 0.87),
+    300: rgba(0, 0, 0, 0.87),
+    400: rgba(0, 0, 0, 0.87),
+    500: #ffffff,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff,
+    A100: rgba(0, 0, 0, 0.87),
+    A200: #ffffff,
+    A400: #ffffff,
+    A700: #ffffff,
+  ),
+);
+
+$kicomlib-primary: mat.m2-define-palette($kicomlib-blue, 600, 400, 800);
+$kicomlib-accent: mat.m2-define-palette($kicomlib-blue, 500, 300, 700);
+$kicomlib-warn: mat.m2-define-palette($kicomlib-red, 500, 400, 700);
+
+$kicomlib-theme: mat.m2-define-dark-theme((
+  color: (
+    primary: $kicomlib-primary,
+    accent: $kicomlib-accent,
+    warn: $kicomlib-warn,
+  ),
+  typography: mat.m2-define-typography-config(
+    $font-family: 'Roboto, "Helvetica Neue", sans-serif',
+  ),
+  density: 0,
+));
+
+// Material's stock dark surfaces (#303030 / #424242) are replaced with the
+// gray-950 / gray-900 / gray-800 stack the design is built on.
+$kicomlib-surfaces: (
+  status-bar: #030712,
+  app-bar: #111827,
+  background: #030712,
+  hover: rgba(255, 255, 255, 0.04),
+  card: #111827,
+  dialog: #111827,
+  disabled-button: rgba(255, 255, 255, 0.12),
+  raised-button: #1f2937,
+  focused-button: rgba(255, 255, 255, 0.12),
+  selected-button: #1f2937,
+  selected-disabled-button: #1f2937,
+  disabled-button-toggle: #0b1220,
+  unselected-chip: #1f2937,
+  disabled-list-option: rgba(255, 255, 255, 0.12),
+  tooltip: #374151,
+);
+
+$kicomlib-color: map.get($kicomlib-theme, color);
+$kicomlib-background: map.merge(map.get($kicomlib-color, background), $kicomlib-surfaces);
+$kicomlib-color: map.merge($kicomlib-color, (background: $kicomlib-background));
+$kicomlib-theme: map.merge(
+  $kicomlib-theme,
+  (color: $kicomlib-color, background: $kicomlib-background)
+);
+
+@include mat.elevation-classes();
+@include mat.app-background();
+
+// Only the components this app actually renders are themed, which keeps the
+// emitted CSS well inside the bundle budget.
+@include mat.core-theme($kicomlib-theme);
+@include mat.ripple-theme($kicomlib-theme);
+@include mat.button-theme($kicomlib-theme);
+@include mat.icon-button-theme($kicomlib-theme);
+@include mat.checkbox-theme($kicomlib-theme);
+@include mat.dialog-theme($kicomlib-theme);
+@include mat.divider-theme($kicomlib-theme);
+@include mat.form-field-theme($kicomlib-theme);
+@include mat.icon-theme($kicomlib-theme);
+@include mat.input-theme($kicomlib-theme);
+@include mat.menu-theme($kicomlib-theme);
+@include mat.optgroup-theme($kicomlib-theme);
+@include mat.option-theme($kicomlib-theme);
+@include mat.paginator-theme($kicomlib-theme);
+@include mat.select-theme($kicomlib-theme);
+@include mat.sidenav-theme($kicomlib-theme);
+@include mat.sort-theme($kicomlib-theme);
+@include mat.table-theme($kicomlib-theme);
+@include mat.tabs-theme($kicomlib-theme);

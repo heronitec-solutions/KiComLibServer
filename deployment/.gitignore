@@ -1,0 +1,11 @@
+# Copy of .env.example with the local database password and runner token.
+.env
+
+# Postgres data directory mounted by the Compose files in this directory.
+postgresql/
+
+# Runtime data mounted into the app container.
+backups/
+repos/
+cache/
+keys/

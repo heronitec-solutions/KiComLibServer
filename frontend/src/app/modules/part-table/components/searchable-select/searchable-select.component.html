@@ -1,0 +1,24 @@
+<mat-form-field appearance="fill" subscriptSizing="dynamic">
+  @if (label) {
+    <mat-label>{{ label }}</mat-label>
+  }
+  <input
+    matInput
+    [placeholder]="placeholder"
+    [attr.aria-label]="ariaLabel || label || placeholder || 'Select'"
+    [matAutocomplete]="auto"
+    [ngModel]="query"
+    (ngModelChange)="onQueryChange($event)"
+    (focus)="onFocus($event)"
+    (blur)="onBlur()"
+    autocomplete="off"
+    />
+    <mat-autocomplete #auto="matAutocomplete" autoActiveFirstOption [displayWith]="displayLabel" (optionSelected)="onSelected($event)" (closed)="onPanelClosed()">
+      @for (option of filtered; track option) {
+        <mat-option [value]="option" (mousedown)="onOptionMouseDown($event)">{{ option.label }}</mat-option>
+      }
+      @if (!filtered.length) {
+        <mat-option disabled (mousedown)="onOptionMouseDown($event)">No matches</mat-option>
+      }
+    </mat-autocomplete>
+  </mat-form-field>

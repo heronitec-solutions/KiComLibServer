@@ -1,0 +1,128 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>{{ title }}</h1>
+  <div class="spacer"></div>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  @if (data.results.length) {
+    <div class="surface-panel overflow-x-auto">
+      <table mat-table [dataSource]="data.results" class="editor-table pick-table">
+        <ng-container matColumnDef="select">
+          <th mat-header-cell *matHeaderCellDef class="select-column"></th>
+          <td mat-cell *matCellDef="let row" class="select-column">
+            @if (single) {
+              <input
+                type="radio"
+                name="distributorHit"
+                [checked]="selected === row"
+                (click)="$event.stopPropagation(); choose(row)"
+                aria-label="Select part"
+                />
+            }
+            @if (!single) {
+              <input
+                type="checkbox"
+                [checked]="isChecked(row)"
+                (click)="toggle(row, $event)"
+                aria-label="Select row"
+                />
+            }
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="manufacturer">
+          <th mat-header-cell *matHeaderCellDef> Manufacturer </th>
+          <td mat-cell *matCellDef="let row"> {{ text(row.manufacturer) }} </td>
+        </ng-container>
+        <ng-container matColumnDef="partNumber">
+          <th mat-header-cell *matHeaderCellDef> Part number </th>
+          <td mat-cell *matCellDef="let row" class="mono-cell"> {{ text(row.manufacturerPartNumber) }} </td>
+        </ng-container>
+        <ng-container matColumnDef="description">
+          <th mat-header-cell *matHeaderCellDef> Description </th>
+          <td mat-cell *matCellDef="let row" class="description-cell"> {{ text(row.description) }} </td>
+        </ng-container>
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef> Status </th>
+          <td mat-cell *matCellDef="let row"> {{ lifecycleLabel(row.lifecycleStatus) }} </td>
+        </ng-container>
+        <ng-container matColumnDef="orderNumber">
+          <th mat-header-cell *matHeaderCellDef> Order number </th>
+          <td mat-cell *matCellDef="let row" class="mono-cell"> {{ text(row.orderNumber) }} </td>
+        </ng-container>
+        <ng-container matColumnDef="distributor">
+          <th mat-header-cell *matHeaderCellDef> Distributor </th>
+          <td mat-cell *matCellDef="let row"> {{ text(row.distributorName) }} </td>
+        </ng-container>
+        <ng-container matColumnDef="quantityMin">
+          <th mat-header-cell *matHeaderCellDef class="qty-column"> Min qty </th>
+          <td mat-cell *matCellDef="let row" class="qty-column"> {{ qty(row.quantityMin) }} </td>
+        </ng-container>
+        <ng-container matColumnDef="quantitySteps">
+          <th mat-header-cell *matHeaderCellDef class="qty-column"> Steps </th>
+          <td mat-cell *matCellDef="let row" class="qty-column"> {{ qty(row.quantitySteps) }} </td>
+        </ng-container>
+        <ng-container matColumnDef="source">
+          <th mat-header-cell *matHeaderCellDef> Source </th>
+          <td mat-cell *matCellDef="let row"> {{ text(row.provider) }} </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: columns;"
+          (click)="onRowClick(row)"
+          [class.pick-selected]="single ? selected === row : isChecked(row)"
+        ></tr>
+      </table>
+    </div>
+  }
+
+  @if (!data.results.length) {
+    <div class="py-10 text-center">
+      <mat-icon class="icon-48 mx-auto mb-3 text-gray-600" fontSet="material-icons-outlined">search_off</mat-icon>
+      <p class="m-0 text-gray-400">{{ emptyMessage }}</p>
+    </div>
+  }
+
+  @if (single && data.results.length) {
+    <section class="import-fields" aria-label="Data to import">
+      <h2 class="dialog-section-title">Data to import</h2>
+      @if (!selected) {
+        <p class="m-0 text-sm text-gray-400">Select a part to choose which data to import.</p>
+      }
+      @if (selected) {
+        <div class="import-grid">
+          @for (option of importOptions; track option) {
+            <label
+              class="import-option"
+              [class.is-disabled]="!option.available"
+              >
+              <input
+                type="checkbox"
+                [checked]="isFieldChecked(option.id)"
+                [disabled]="!option.available"
+                (change)="onFieldChange(option, $event)"
+                />
+                <span class="import-option-text">
+                  <span class="import-option-label">{{ option.label }}</span>
+                  @if (option.available ? option.detail : option.reason) {
+                    <span
+                      class="import-option-detail"
+                      [attr.title]="option.title || null"
+                    >{{ option.available ? option.detail : option.reason }}</span>
+                  }
+                </span>
+              </label>
+            }
+          </div>
+        }
+      </section>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button type="button" class="btn-outline" (click)="close()">Cancel</button>
+    <button type="button" class="btn-primary" (click)="confirm()" [disabled]="!canConfirm">{{ confirmLabel }}</button>
+  </mat-dialog-actions>

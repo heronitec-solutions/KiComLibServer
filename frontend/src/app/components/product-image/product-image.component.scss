@@ -1,0 +1,33 @@
+:host {
+  display: inline-block;
+}
+
+.product-image-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 8.5rem;
+  height: 8.5rem;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: rgb(17 24 39);
+  border: 1px solid rgb(55 65 81);
+}
+
+.product-image-frame img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.product-image-empty {
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: rgb(156 163 175);
+}
+
+:host(.thumb) .product-image-frame {
+  width: 2.5rem;
+  height: 2.5rem;
+}

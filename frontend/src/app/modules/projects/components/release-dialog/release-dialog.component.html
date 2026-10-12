@@ -1,0 +1,43 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>New release</h1>
+  <div class="spacer"></div>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <p class="mb-4 text-sm text-gray-400">
+    Record a release from a commit or a tag. Schematic PDF, Gerber, drill, position, BOM, ERC, DRC, and STEP files are queued for download.
+  </p>
+  <div class="dialog-grid">
+    <mat-form-field appearance="fill" class="dialog-grid-full">
+      <mat-label>Name</mat-label>
+      <input matInput [(ngModel)]="name" placeholder="Rev B" required />
+    </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Revision</mat-label>
+      <select matNativeControl [(ngModel)]="sha">
+        <option value="">Select a commit</option>
+        @for (revision of data.revisions; track revision) {
+          <option [value]="revision.commitSha">
+            {{ revision.commitSha.slice(0, 12) }} — {{ revision.message }}
+          </option>
+        }
+      </select>
+    </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Tag</mat-label>
+      <input matInput [(ngModel)]="tag" placeholder="v1.2.0" />
+    </mat-form-field>
+    <mat-form-field appearance="fill" class="dialog-grid-full">
+      <mat-label>Notes</mat-label>
+      <textarea matInput rows="3" [(ngModel)]="notes"></textarea>
+    </mat-form-field>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button type="button" class="btn-outline" (click)="close()">Cancel</button>
+  <button type="button" class="btn-primary" (click)="confirm()" [disabled]="!name.trim() || (!sha.trim() && !tag.trim())">Create</button>
+</mat-dialog-actions>

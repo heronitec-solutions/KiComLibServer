@@ -1,0 +1,218 @@
+<app-header
+  icon="warehouse"
+  pageTitle="Warehouse"
+  subtitle="Stock on hand, storage locations and batches such as Ordered or Empty"
+  >
+  @if (auth.canWriteWarehouse()) {
+    <button type="button" class="btn-primary" (click)="addEntry()">
+      <mat-icon class="icon-16" fontSet="material-icons-outlined">add</mat-icon>
+      <span>Add stock</span>
+    </button>
+  }
+</app-header>
+
+<div class="page-container">
+  @if (dataSource.loadError$ | async; as loadError) {
+    <p class="surface-panel mb-6 p-4 text-red-400">{{ loadError }}</p>
+  }
+  @if (actionError) {
+    <p class="surface-panel mb-6 p-4 text-red-400">{{ actionError }}</p>
+  }
+
+  <div class="surface-panel mb-6 p-6">
+    <div class="mb-4 flex items-center gap-2">
+      <mat-icon class="icon-20 text-gray-400" fontSet="material-icons-outlined">filter_list</mat-icon>
+      <h3 class="panel-title">Search &amp; Filter</h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div class="relative">
+        <mat-icon
+          class="icon-16 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          fontSet="material-icons-outlined"
+        >search</mat-icon>
+        <input
+          type="text"
+          class="input-dark pl-10"
+          placeholder="Search name, value, location..."
+          [ngModel]="filter.search"
+          (ngModelChange)="onSearchChange($event)"
+          />
+        </div>
+
+        <select class="input-dark" [ngModel]="filter.status" (ngModelChange)="onStatusChange($event)">
+          <option value="all">All stock</option>
+          <option value="stock">In stock</option>
+          <option value="ordered">Ordered</option>
+          <option value="empty">Empty</option>
+        </select>
+
+        @if (hasActiveFilters) {
+          <button type="button" class="btn-outline" (click)="clearFilters()">
+            <mat-icon class="icon-16" fontSet="material-icons-outlined">close</mat-icon>
+            <span>Clear Filters</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="surface-panel overflow-hidden">
+      <table
+        mat-table
+        matSort
+        matSortActive="name"
+        matSortDirection="asc"
+        matSortDisableClear
+        [dataSource]="dataSource"
+        (matSortChange)="sortData($event)"
+        >
+        <ng-container matColumnDef="image">
+          <th mat-header-cell *matHeaderCellDef class="image-column"></th>
+          <td mat-cell *matCellDef="let row" class="image-column">
+            @if (row.hasImage) {
+              <product-image
+                class="thumb"
+                [fetchUrl]="imageUrl(row)"
+                [alt]="row.name"
+              ></product-image>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> Name </th>
+          <td mat-cell *matCellDef="let row">
+            @if (row.partId && auth.canRead()) {
+              <button
+                type="button"
+                class="inline-flex items-center gap-1 text-left text-blue-400 hover:text-blue-300"
+                (click)="openPart(row)"
+                >
+                <span>{{ row.name }}</span>
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">open_in_new</mat-icon>
+              </button>
+            } @else {
+              <span>{{ row.name }}</span>
+            }
+            @if (row.comment) {
+              <div class="max-w-xs truncate text-xs text-gray-400">{{ row.comment }}</div>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="source">
+          <th mat-header-cell *matHeaderCellDef> Source </th>
+          <td mat-cell *matCellDef="let row">
+            <span class="badge badge-muted">{{ row.partId ? 'Catalog' : 'Manual' }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="value">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> Value </th>
+          <td mat-cell *matCellDef="let row"> {{ row.value || '—' }} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="quantity">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="quantity_column"> Quantity </th>
+          <td mat-cell *matCellDef="let row" class="quantity_column mono-cell"> {{ row.quantity }} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="location">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> Location </th>
+          <td mat-cell *matCellDef="let row"> {{ row.locations || '—' }} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="batches">
+          <th mat-header-cell *matHeaderCellDef> Batches </th>
+          <td mat-cell *matCellDef="let row">
+            <div class="flex flex-wrap gap-1">
+              @for (batch of row.batches; track batch) {
+                <span
+                  class="badge"
+                  [class.badge-muted]="batch.name === 'Empty'"
+                  [title]="batch.location || batch.name"
+                  >
+                  {{ batch.name }}@if (batch.quantity > 0) {
+                  <span> · {{ batch.quantity }}</span>
+                }
+              </span>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="actions_column"> Actions </th>
+        <td mat-cell *matCellDef="let row" class="actions_column">
+          <div class="flex space-x-1">
+            @if (!auth.canWriteWarehouse()) {
+              <button
+                type="button"
+                class="btn-icon text-blue-400 hover:text-blue-300"
+                aria-label="View stock"
+                (click)="viewRow(row)"
+                >
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">visibility</mat-icon>
+              </button>
+            }
+            @if (auth.canWriteWarehouse()) {
+              <button
+                type="button"
+                class="btn-icon text-yellow-400 hover:text-yellow-300"
+                aria-label="Edit stock"
+                (click)="editRow(row)"
+                >
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">edit</mat-icon>
+              </button>
+            }
+            @if (auth.canWriteWarehouse()) {
+              <button
+                type="button"
+                class="btn-icon text-red-400 hover:text-red-300"
+                aria-label="Delete stock"
+                (click)="deleteRow(row)"
+                >
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">delete_forever</mat-icon>
+              </button>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr
+        mat-row
+        *matRowDef="let row; columns: displayedColumns;"
+        class="cursor-pointer"
+        tabindex="0"
+        (click)="onRowClick(row, $event)"
+        (keydown.enter)="onRowClick(row, $event)"
+      ></tr>
+    </table>
+
+    <mat-paginator
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      [pageSize]="25"
+      showFirstLastButtons
+      aria-label="Select page of warehouse items"
+    ></mat-paginator>
+  </div>
+
+  @if ((dataSource.filteredCount$ | async) === 0 && (dataSource.isLoading$ | async) === false && !(dataSource.loadError$ | async)) {
+    <div class="surface-panel mt-6 py-12 text-center">
+      <mat-icon class="icon-48 mx-auto mb-4 text-gray-600" fontSet="material-icons-outlined">warehouse</mat-icon>
+      <h3 class="mb-2 text-lg font-medium text-white">No stock found</h3>
+      <p class="mb-6 text-gray-400">
+        {{ hasActiveFilters
+        ? 'Try adjusting your search or filters'
+        : 'Add a catalog part or a component that is not in the catalog' }}
+      </p>
+      @if (auth.canWriteWarehouse() && !hasActiveFilters) {
+        <button type="button" class="btn-primary" (click)="addEntry()">
+          <mat-icon class="icon-16" fontSet="material-icons-outlined">add</mat-icon>
+          <span>Add stock</span>
+        </button>
+      }
+    </div>
+  }
+</div>

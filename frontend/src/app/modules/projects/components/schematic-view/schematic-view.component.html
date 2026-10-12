@@ -1,0 +1,53 @@
+@if (!sha) {
+  <p class="text-sm text-gray-400">Select a revision to preview its schematic.</p>
+}
+@if (error) {
+  <p class="mb-4 text-sm text-red-400">{{ error }}</p>
+}
+@if (loading) {
+  <p class="mb-4 text-sm text-gray-400">Loading schematic…</p>
+}
+
+@if (detail) {
+  <div class="space-y-4">
+    @if (detail.title || detail.revisionLabel) {
+      <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-gray-400">Title</dt>
+          <dd class="m-0 text-white">{{ detail.title || '—' }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-400">Revision</dt>
+          <dd class="m-0 text-white">{{ detail.revisionLabel || '—' }}</dd>
+        </div>
+      </dl>
+    }
+    @if (detail.warnings.length) {
+      <div class="surface-panel p-4 text-sm text-yellow-200">
+        @for (warning of detail.warnings; track warning) {
+          <p class="m-0">{{ warning }}</p>
+        }
+      </div>
+    }
+    <div class="flex flex-wrap gap-2">
+      @for (item of detail.pages; track item) {
+        <button
+          type="button"
+          class="btn-outline"
+          [class.btn-primary]="item.page === page"
+          (click)="selectPage(item.page)"
+          >
+          {{ item.sheetNames || item.file || ('Page ' + item.page) }}
+        </button>
+      }
+    </div>
+    <div class="schematic-frame">
+      @if (previewSrc) {
+        <img [src]="previewSrc" [alt]="'Schematic page ' + page" />
+      }
+      @if (!previewSrc) {
+        <p class="p-6 text-sm text-gray-500">Schematic preview is not ready yet.</p>
+      }
+    </div>
+  </div>
+}

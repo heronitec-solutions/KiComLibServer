@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build backend
+        run: dotnet build backend/KiComLibBackend.sln --configuration Release
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npx ng build --configuration production
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: kicad
+          POSTGRES_PASSWORD: test123
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kicad -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DB_CONNECTION: Host=127.0.0.1;Port=5432;Database=kicaddbl_test;Username=kicad;Password=test123
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Backend tests
+        run: |
+          container="$(docker ps --format '{{.Names}} {{.Ports}}' | awk '/5432->5432/ { print $1; exit }')"
+          if [ -z "$container" ]; then
+            echo "PostgreSQL service container was not found."
+            docker ps
+            exit 1
+          fi
+          echo "Using PostgreSQL container ${container} for pg_dump and pg_restore."
+          export DB_DOCKER_CONTAINER="$container"
+          dotnet test backend.Tests/KiComLibBackend.Tests.csproj --configuration Release
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend tests
+        working-directory: frontend
+        run: |
+          npm ci
+          chrome="$(command -v google-chrome || command -v google-chrome-stable || true)"
+          if [ -z "$chrome" ]; then
+            echo "Google Chrome was not found on the runner."
+            exit 1
+          fi
+          wrapper="${RUNNER_TEMP}/chrome-ci"
+          printf '#!/bin/sh\nexec "%s" --no-sandbox --disable-dev-shm-usage "$@"\n' "$chrome" > "$wrapper"
+          chmod +x "$wrapper"
+          export CHROME_BIN="$wrapper"
+          npx ng test --watch=false --browsers=ChromeHeadless --progress=false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Runner tests
+        working-directory: runner
+        run: |
+          pip install pytest
+          python -m pytest tests
+
+  lint:
+    name: Linter
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Backend format
+        run: dotnet format backend/KiComLibBackend.sln --verify-no-changes
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend lint
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run lint
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Runner lint
+        run: |
+          pip install ruff==0.17.0
+          ruff check runner

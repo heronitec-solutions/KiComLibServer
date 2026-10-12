@@ -1,0 +1,107 @@
+<app-header
+  icon="cloud"
+  pageTitle="APIs"
+  subtitle="Catalog and distributor connections"
+  >
+</app-header>
+
+<div class="page-container">
+  @if (error) {
+    <p class="surface-panel mb-6 p-4 text-red-400">{{ error }}</p>
+  }
+  @if (message) {
+    <p class="surface-panel mb-6 p-4 text-green-400">{{ message }}</p>
+  }
+  @if (isLoading) {
+    <div class="surface-panel p-6 text-gray-400">Loading APIs…</div>
+  }
+
+  @if (!isLoading) {
+    <div class="mb-4 flex flex-wrap items-end justify-between gap-4">
+      <label class="flex w-full max-w-xs flex-col gap-1 text-sm text-gray-300">
+        Lookup API
+        <select
+          class="input-dark"
+          [ngModel]="lookupProvider"
+          (ngModelChange)="saveLookup($event)"
+          [disabled]="isSavingLookup"
+          >
+          <option value="">None</option>
+          @for (provider of lookupChoices; track provider) {
+            <option [value]="provider.id">{{ provider.label }}</option>
+          }
+        </select>
+        <span class="text-xs text-gray-500">Default API for part lookup in the part editor.</span>
+      </label>
+      <div class="ml-auto flex items-center gap-2">
+        <select
+          class="input-dark w-56"
+          [(ngModel)]="providerToAdd"
+          [disabled]="availableProviders.length === 0"
+          aria-label="API to add"
+          >
+          <option value="">{{ availableProviders.length ? 'Choose an API' : 'All APIs added' }}</option>
+          @for (provider of availableProviders; track provider) {
+            <option [value]="provider.id">{{ provider.label }}</option>
+          }
+        </select>
+        <button type="button" class="btn-primary" (click)="add()" [disabled]="!providerToAdd">
+          <mat-icon class="icon-16" fontSet="material-icons-outlined">add</mat-icon>
+          <span>Add</span>
+        </button>
+      </div>
+    </div>
+    @if (lookupError) {
+      <p class="mb-4 text-sm text-red-400">{{ lookupError }}</p>
+    }
+    @if (rows.length > 0) {
+      <div class="surface-panel overflow-hidden">
+        <table mat-table [dataSource]="rows">
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>API</th>
+            <td mat-cell *matCellDef="let row">
+              <div class="flex items-center gap-2">
+                <span>{{ row.label }}</span>
+                @if (row.isLookup) {
+                  <span class="badge badge-muted">Lookup</span>
+                }
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="kind">
+            <th mat-header-cell *matHeaderCellDef>Type</th>
+            <td mat-cell *matCellDef="let row">
+              <span class="badge badge-muted">{{ row.kindLabel }}</span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="detail">
+            <th mat-header-cell *matHeaderCellDef>Details</th>
+            <td mat-cell *matCellDef="let row">{{ row.detail }}</td>
+          </ng-container>
+          <ng-container matColumnDef="credentials">
+            <th mat-header-cell *matHeaderCellDef>Credentials</th>
+            <td mat-cell *matCellDef="let row">
+              <span class="badge" [class.badge-success]="row.ready" [class.badge-warning]="!row.ready">{{ row.credentials }}</span>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: columns;"
+            class="cursor-pointer"
+            tabindex="0"
+            (click)="edit(row)"
+            (keydown.enter)="edit(row)"
+          ></tr>
+        </table>
+      </div>
+    }
+    @if (rows.length === 0) {
+      <div class="surface-panel py-12 text-center">
+        <mat-icon class="icon-48 mx-auto mb-4 text-gray-600" fontSet="material-icons-outlined">cloud</mat-icon>
+        <h3 class="mb-2 text-lg font-medium text-white">No APIs added</h3>
+        <p class="text-gray-400">Choose a provider and add it to configure the connection.</p>
+      </div>
+    }
+  }
+</div>

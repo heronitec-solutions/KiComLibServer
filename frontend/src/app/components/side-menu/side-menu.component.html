@@ -1,0 +1,64 @@
+<mat-sidenav-container class="app-shell" autosize>
+  @if (auth.profile().authenticated) {
+    <mat-sidenav #drawer mode="side" opened class="app-sidebar">
+      <div class="flex h-full flex-col">
+        <!-- Branding -->
+        <div class="flex items-center space-x-2 border-b border-gray-800 p-4">
+          <img src="favicon.svg" alt="" class="h-10 w-10 shrink-0" />
+          <div class="min-w-0">
+            <h2 class="truncate text-lg font-bold text-white">KiComLib Library</h2>
+            <p class="truncate text-sm text-gray-400">Electronics Management</p>
+          </div>
+        </div>
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto px-2 py-4">
+          @for (group of visibleGroups(); track group) {
+            <div class="mb-4">
+              <h3 class="px-2 py-1 text-xs font-medium text-gray-300">{{ group.label }}</h3>
+              <ul class="mt-1 space-y-1">
+                @for (item of visibleItems(group); track item) {
+                  <li>
+                    @if (item.route) {
+                      <a
+                        [routerLink]="item.route"
+                        routerLinkActive="bg-gray-800 text-white"
+                class="flex items-center gap-2 rounded-md px-2 py-2 text-sm text-gray-300
+                       transition-colors hover:bg-gray-800 hover:text-white"
+                        >
+                        <mat-icon class="icon-16" fontSet="material-icons-outlined">{{ item.icon }}</mat-icon>
+                        <span>{{ item.title }}</span>
+                      </a>
+                    } @else {
+                      <span
+                        class="flex cursor-not-allowed items-center gap-2 rounded-md px-2 py-2 text-sm text-gray-500"
+                        title="Not available yet"
+                        >
+                        <mat-icon class="icon-16" fontSet="material-icons-outlined">{{ item.icon }}</mat-icon>
+                        <span>{{ item.title }}</span>
+                      </span>
+                    }
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+        </nav>
+        <div class="border-t border-gray-800 px-2 py-3">
+          <a
+            routerLink="/info"
+            routerLinkActive="bg-gray-800 text-white"
+            class="flex items-center gap-2 rounded-md px-2 py-2 text-sm text-gray-300
+                   transition-colors hover:bg-gray-800 hover:text-white"
+            >
+            <mat-icon class="icon-16" fontSet="material-icons-outlined">info</mat-icon>
+            <span>Info</span>
+          </a>
+        </div>
+      </div>
+    </mat-sidenav>
+  }
+
+  <mat-sidenav-content class="app-content">
+    <content-area></content-area>
+  </mat-sidenav-content>
+</mat-sidenav-container>

@@ -1,0 +1,214 @@
+<app-header
+  icon="corporate_fare"
+  pageTitle="Directory"
+  subtitle="Active Directory and LDAP accounts sign in beside local users. Rights still come from groups in KiComLib."
+  >
+</app-header>
+
+<div class="page-container space-y-6">
+  @if (error) {
+    <p class="surface-panel p-4 text-red-400">{{ error }}</p>
+  }
+  @if (message) {
+    <p class="surface-panel p-4 text-green-400">{{ message }}</p>
+  }
+  @if (isLoading) {
+    <div class="surface-panel p-6 text-gray-400">Loading directory connection…</div>
+  }
+
+  @if (!isLoading) {
+    <section class="surface-panel p-6">
+      <h2 class="panel-title mb-3">Connection</h2>
+      <p class="mb-4 text-sm text-gray-400">
+        A bind account with permission to read users and groups is enough. The bind password is stored encrypted and is not shown again.
+        Leave it empty to keep the saved password. The user filter must contain the token <span class="font-mono">&#123;username&#125;</span>.
+      </p>
+      <div class="mb-4 flex flex-wrap gap-2">
+        <button type="button" class="btn-outline" (click)="applyActiveDirectory()" [disabled]="isSaving">Active Directory defaults</button>
+        <button type="button" class="btn-outline" (click)="applyLdap()" [disabled]="isSaving">LDAP defaults</button>
+      </div>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <label class="flex items-center gap-2 text-sm text-gray-300 md:col-span-2">
+          <input type="checkbox" [(ngModel)]="enabled" [disabled]="isSaving" />
+          <span>Allow directory sign-in</span>
+        </label>
+        <label class="flex items-center gap-2 text-sm text-gray-300 md:col-span-2">
+          <input type="checkbox" [(ngModel)]="provisionOnLogin" [disabled]="isSaving" />
+          <span>Create a KiComLib account the first time someone signs in</span>
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Host
+          <input class="input-dark" [(ngModel)]="host" [disabled]="isSaving" autocomplete="off" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Port
+          <input class="input-dark" type="number" min="1" max="65535" [(ngModel)]="port" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Encryption
+          <select class="input-dark" [(ngModel)]="encryption" [disabled]="isSaving">
+            <option value="starttls">StartTLS</option>
+            <option value="ssl">SSL</option>
+            <option value="none">None</option>
+          </select>
+        </label>
+        @if (encryption !== 'none') {
+          <label class="flex items-center gap-2 text-sm text-gray-300">
+            <input type="checkbox" [(ngModel)]="allowUntrustedCertificate" [disabled]="isSaving" />
+            <span>Trust the server certificate without checking it</span>
+          </label>
+        }
+        @if (encryption === 'none') {
+          <p class="m-0 text-sm text-yellow-300 md:col-span-2">
+            Without StartTLS or SSL the password is sent in clear text.
+          </p>
+        }
+        <label class="flex flex-col gap-1 text-sm text-gray-300 md:col-span-2">
+          Bind DN or user principal name
+          <input class="input-dark" [(ngModel)]="bindDn" [disabled]="isSaving" autocomplete="off" placeholder="cn=kicomlib,ou=services,dc=example,dc=com" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300 md:col-span-2">
+          Bind password
+          <input class="input-dark" type="password" [(ngModel)]="bindPassword" [disabled]="isSaving" autocomplete="new-password" [placeholder]="bindPasswordSet ? 'Saved password is kept if this stays empty' : ''" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          User search base
+          <input class="input-dark" [(ngModel)]="userBaseDn" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Group search base
+          <input class="input-dark" [(ngModel)]="groupBaseDn" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300 md:col-span-2">
+          User filter
+          <input class="input-dark font-mono" [(ngModel)]="userFilter" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Username attribute
+          <input class="input-dark font-mono" [(ngModel)]="usernameAttribute" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Display name attribute
+          <input class="input-dark font-mono" [(ngModel)]="displayNameAttribute" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          User id attribute
+          <input class="input-dark font-mono" [(ngModel)]="userIdAttribute" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300 md:col-span-2">
+          Group filter
+          <input class="input-dark font-mono" [(ngModel)]="groupFilter" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Group name attribute
+          <input class="input-dark font-mono" [(ngModel)]="groupNameAttribute" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Group id attribute
+          <input class="input-dark font-mono" [(ngModel)]="groupIdAttribute" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300 md:col-span-2">
+          Membership attribute
+          <input class="input-dark font-mono" [(ngModel)]="membershipAttribute" [disabled]="isSaving" />
+          <span class="text-xs text-gray-500">memberOf reads groups from the user. member or uniqueMember searches groups that list the user.</span>
+        </label>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <button type="button" class="btn-primary" (click)="save()" [disabled]="isSaving">{{ isSaving ? 'Saving…' : 'Save' }}</button>
+        <button type="button" class="btn-outline" (click)="test()" [disabled]="isTesting || isSaving">{{ isTesting ? 'Testing…' : 'Test connection' }}</button>
+      </div>
+    </section>
+  }
+
+  @if (!isLoading) {
+    <section class="surface-panel p-6">
+      <h2 class="panel-title mb-3">Users</h2>
+      <p class="mb-4 text-sm text-gray-400">
+        Import people before they sign in, or leave sign-in provisioning on and let the first successful sign-in create the account.
+        A local user with the same name is left unchanged. Up to 50 matches are shown. Save a complete connection before searching.
+      </p>
+      <div class="mb-4 flex flex-col gap-3 sm:flex-row">
+        <input class="input-dark" placeholder="Name or username" [(ngModel)]="userQuery" [disabled]="!configured" />
+        <button type="button" class="btn-outline shrink-0" (click)="searchUsers()" [disabled]="!configured || isSearchingUsers || !userQuery.trim()">
+          {{ isSearchingUsers ? 'Searching…' : 'Search' }}
+        </button>
+      </div>
+      @if (userHits.length) {
+        <div class="mb-4 flex flex-col gap-2 text-sm text-gray-300">
+          @for (hit of userHits; track hit) {
+            <label class="flex items-start gap-2">
+              <input type="checkbox" [checked]="selectedUsers.has(hit.distinguishedName)" (change)="toggleUser(hit.distinguishedName, $any($event.target).checked)" />
+              <span>
+                <span class="text-white">{{ hit.username }}</span>
+                @if (hit.displayName && hit.displayName !== hit.username) {
+                  <span class="text-gray-400"> · {{ hit.displayName }}</span>
+                }
+                <span class="block text-xs text-gray-500">{{ hit.distinguishedName }}</span>
+              </span>
+            </label>
+          }
+          <button type="button" class="btn-primary mt-2 self-start" (click)="importUsers()" [disabled]="isImportingUsers || !selectedUsers.size">
+            {{ isImportingUsers ? 'Importing…' : 'Import selected' }}
+          </button>
+        </div>
+      }
+    </section>
+  }
+
+  @if (!isLoading) {
+    <section class="surface-panel p-6">
+      <h2 class="panel-title mb-3">Groups</h2>
+      <p class="mb-4 text-sm text-gray-400">
+        Imported groups become KiComLib groups. If a local group already has the same name, it is linked instead of copied and keeps its rights.
+        Membership is refreshed when a directory user signs in. Local groups assigned by hand stay in place.
+      </p>
+      <div class="mb-4 flex flex-col gap-2 text-sm text-gray-300">
+        <label class="flex items-center gap-2">
+          <input type="checkbox" [(ngModel)]="importCanRead" [disabled]="importCanWrite" />
+          <span>Catalog read, for new groups</span>
+        </label>
+        <label class="flex items-center gap-2">
+          <input type="checkbox" [ngModel]="importCanWrite" (ngModelChange)="onImportWrite($event)" />
+          <span>Catalog write, for new groups</span>
+        </label>
+        <label class="flex items-center gap-2">
+          <input type="checkbox" [(ngModel)]="importCanReadWarehouse" [disabled]="importCanWriteWarehouse" />
+          <span>Warehouse read, for new groups</span>
+        </label>
+        <label class="flex items-center gap-2">
+          <input type="checkbox" [ngModel]="importCanWriteWarehouse" (ngModelChange)="onImportWarehouseWrite($event)" />
+          <span>Warehouse write, for new groups</span>
+        </label>
+        <label class="flex items-center gap-2">
+          <input type="checkbox" [(ngModel)]="importCanAdmin" />
+          <span>Manage users, groups and settings, for new groups</span>
+        </label>
+      </div>
+      <div class="mb-4 flex flex-col gap-3 sm:flex-row">
+        <input class="input-dark" placeholder="Group name" [(ngModel)]="groupQuery" [disabled]="!configured" />
+        <button type="button" class="btn-outline shrink-0" (click)="searchGroups()" [disabled]="!configured || isSearchingGroups || !groupQuery.trim()">
+          {{ isSearchingGroups ? 'Searching…' : 'Search' }}
+        </button>
+      </div>
+      @if (groupHits.length) {
+        <div class="flex flex-col gap-2 text-sm text-gray-300">
+          @for (hit of groupHits; track hit) {
+            <label class="flex items-start gap-2">
+              <input type="checkbox" [checked]="selectedGroups.has(hit.distinguishedName)" (change)="toggleGroup(hit.distinguishedName, $any($event.target).checked)" />
+              <span>
+                <span class="text-white">{{ hit.name }}</span>
+                @if (hit.description) {
+                  <span class="text-gray-400"> · {{ hit.description }}</span>
+                }
+                <span class="block text-xs text-gray-500">{{ hit.distinguishedName }}</span>
+              </span>
+            </label>
+          }
+          <button type="button" class="btn-primary mt-2 self-start" (click)="importGroups()" [disabled]="isImportingGroups || !selectedGroups.size">
+            {{ isImportingGroups ? 'Importing…' : 'Import selected' }}
+          </button>
+        </div>
+      }
+    </section>
+  }
+</div>

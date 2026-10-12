@@ -1,0 +1,51 @@
+{
+    "artificialDelayMilliseconds": 300,
+    "keepExistingTerminalsOpen": false,
+    "runOnStartup": true,
+    "terminals": [
+      {
+        "splitTerminals": [
+            {
+                "name": "Install Dependencies",
+                "commands": [
+                    "clear;npm install"
+                ],
+                "shouldRunCommands": false
+            }
+        ]
+    },
+    {
+        "splitTerminals": [
+            {
+                "name": "Serve",
+                "commands": [
+                    "clear;ng serve --host=0.0.0.0"
+                ],
+                "shouldRunCommands": false
+            }
+        ]
+    },
+    {
+        "splitTerminals": [
+            {
+                "name": "Build Docker Image",
+                "commands": [
+                    "clear;sudo ./build_docker_image.sh"
+                ],
+                "shouldRunCommands": false
+            }
+        ]
+    },
+    {
+        "splitTerminals": [
+            {
+                "name": "Build",
+                "commands": [
+                    "clear;ng build"
+                ],
+                "shouldRunCommands": false
+            }
+        ]
+    }
+    ]
+  }

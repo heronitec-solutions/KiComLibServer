@@ -1,0 +1,209 @@
+<app-header
+  icon="difference"
+  [pageTitle]="projectName || 'Visual diff'"
+  subtitle="Schematic and board changes between two revisions"
+  >
+  <a class="btn-outline" [routerLink]="['/projects', projectId]">Back to project</a>
+</app-header>
+
+<div class="page-container space-y-4">
+  @if (error) {
+    <p class="surface-panel p-4 text-red-400">{{ error }}</p>
+  }
+
+  <section class="surface-panel p-4">
+    <div class="grid grid-cols-1 gap-3 lg:grid-cols-4">
+      <label class="flex flex-col gap-1 text-sm text-gray-300">
+        Base
+        <select class="input-dark" [(ngModel)]="baseSha">
+          <option value="">Select a revision</option>
+          @for (revision of revisions; track revision) {
+            <option [value]="revision.commitSha">
+              {{ revisionLabel(revision) }}
+            </option>
+          }
+        </select>
+      </label>
+      <label class="flex flex-col gap-1 text-sm text-gray-300">
+        Target
+        <select class="input-dark" [(ngModel)]="targetSha">
+          <option value="">Select a revision</option>
+          @for (revision of revisions; track revision) {
+            <option [value]="revision.commitSha">
+              {{ revisionLabel(revision) }}
+            </option>
+          }
+        </select>
+      </label>
+      <div class="flex items-end">
+        <button type="button" class="btn-primary" (click)="startDiff()" [disabled]="loading">Compare</button>
+      </div>
+      <div class="flex flex-col justify-end gap-2">
+        <button type="button" class="btn-outline" (click)="useLatestReleaseToHead()" [disabled]="releasesUnavailable || loading">
+          Latest release → head
+        </button>
+        <button type="button" class="btn-outline" (click)="usePreviousRevision()" [disabled]="loading">Previous revision</button>
+      </div>
+    </div>
+    @if (releasesUnavailable) {
+      <p class="mb-0 mt-3 text-sm text-gray-400">
+        Releases are not available yet, so the release shortcut stays disabled.
+      </p>
+    }
+  </section>
+
+  <div class="grid grid-cols-1 gap-4 xl:grid-cols-[16rem_minmax(0,1fr)_20rem]">
+    <aside class="surface-panel p-4">
+      <h2 class="panel-title mb-3">Pages</h2>
+      <ng-container *ngTemplateOutlet="sheetTree; context: { $implicit: sheetNodes() }"></ng-container>
+      <ng-template #sheetTree let-nodes>
+        <ul class="m-0 list-none space-y-1 p-0">
+          @for (node of nodes; track node) {
+            <li>
+              <button
+                type="button"
+                class="btn-ghost w-full justify-between"
+                [disabled]="!node.pageId"
+                (click)="selectPageById(node.pageId)"
+                >
+                <span>{{ node.name }}</span>
+                <span class="badge badge-muted">{{ node.changeCount }}</span>
+              </button>
+              @if (node.children.length) {
+                <div class="pl-3">
+                  <ng-container *ngTemplateOutlet="sheetTree; context: { $implicit: node.children }"></ng-container>
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      </ng-template>
+      <div class="mt-4 space-y-2">
+        @for (board of boardPages(); track board) {
+          <button
+            type="button"
+            class="btn-outline w-full justify-between"
+            (click)="selectPage(board)"
+            >
+            <span>Board {{ board.side || board.id }}</span>
+            <span class="badge badge-muted">{{ board.changes.length }}</span>
+          </button>
+        }
+      </div>
+    </aside>
+
+    <section class="space-y-3">
+      <div class="flex flex-wrap gap-3 text-sm text-gray-300">
+        @for (status of layerStatuses; track status) {
+          <label class="flex items-center gap-2">
+            <input type="checkbox" [checked]="statusOn[status]" (change)="toggleStatus(status)" />
+            <span>{{ groupLabel(status) }}</span>
+          </label>
+        }
+        @for (category of layerCategories; track category) {
+          <label class="flex items-center gap-2">
+            <input type="checkbox" [checked]="categoryOn[category]" (change)="toggleCategory(category)" />
+            <span>{{ category }}</span>
+          </label>
+        }
+      </div>
+      <div class="flex gap-2">
+        <button type="button" class="btn-outline" (click)="zoomBy(1.2)">Zoom in</button>
+        <button type="button" class="btn-outline" (click)="zoomBy(0.8)">Zoom out</button>
+        <button type="button" class="btn-outline" (click)="resetView()">Reset</button>
+      </div>
+
+      <div
+        #stage
+        class="diff-stage"
+        [attr.aria-busy]="loading"
+        (pointerdown)="onPointerDown($event)"
+        (pointermove)="onPointerMove($event)"
+        (pointerup)="onPointerUp()"
+        (pointerleave)="onPointerUp()"
+        >
+        @if (loading) {
+          <div class="diff-busy" role="status" aria-live="polite">
+            <span class="diff-spinner" aria-hidden="true"></span>
+            <span>{{ busyMessage() }}</span>
+          </div>
+        }
+        <div class="diff-canvas" [style.transform]="canvasTransform()" [attr.data-stamp]="imageStamp">
+          @if (page && !isSideBySide(page)) {
+            @if (imageSrc(page.base); as src) {
+              <img class="diff-base" [src]="src" alt="Base revision" />
+            }
+            @for (layer of visibleLayers(); track layer) {
+              @if (imageSrc(layer.file); as src) {
+                <img
+                  class="diff-layer"
+                  [ngClass]="'diff-layer-' + layer.status"
+                  [src]="src"
+                  [alt]="groupLabel(layer.status) + ' ' + layer.category"
+                  />
+              }
+            }
+            @if (markPosition(); as mark) {
+              <span class="diff-mark" [style.left.%]="mark.left" [style.top.%]="mark.top"></span>
+            }
+          }
+        </div>
+        @if (page && isSideBySide(page)) {
+          <div class="grid grid-cols-1 gap-3 p-3 md:grid-cols-2">
+            <figure class="m-0">
+              <figcaption class="mb-2 text-sm text-gray-300">Base</figcaption>
+              @if (imageSrc(page.base); as src) {
+                <img [src]="src" alt="Base revision, shown separately" />
+              }
+              @if (!page.base) {
+                <p class="text-sm text-gray-400">This page exists only in the target revision.</p>
+              }
+            </figure>
+            <figure class="m-0">
+              <figcaption class="mb-2 text-sm text-gray-300">Target</figcaption>
+              @if (imageSrc(page.target); as src) {
+                <img [src]="src" alt="Target revision, shown separately" />
+              }
+              @if (!page.target) {
+                <p class="text-sm text-gray-400">This page exists only in the base revision.</p>
+              }
+            </figure>
+          </div>
+        }
+        @if (!page && !loading) {
+          <p class="p-6 text-sm text-gray-400">Choose two revisions to render the diff.</p>
+        }
+      </div>
+    </section>
+
+    <aside class="surface-panel max-h-[48rem] space-y-4 overflow-auto p-4">
+      <h2 class="panel-title">Changes</h2>
+      @for (group of changeGroups; track group) {
+        <section>
+          <h3 class="mb-2 text-sm font-semibold text-gray-300">{{ groupLabel(group) }}</h3>
+          @if (!changesFor(group).length) {
+            <p class="m-0 text-sm text-gray-500">None.</p>
+          }
+          <ul class="m-0 list-none space-y-2 p-0">
+            @for (change of changesFor(group); track change) {
+              <li>
+                <button type="button" class="btn-ghost w-full flex-col items-start" (click)="selectChange(change)">
+                  <span class="font-mono text-white">{{ change.reference || change.kind }}</span>
+                  @if (change.value) {
+                    <span class="text-gray-300">{{ change.value }}</span>
+                  }
+                  @if (change.catalogStatus) {
+                    <span class="badge badge-muted">{{ catalogLabel(change.catalogStatus) }}</span>
+                  }
+                  @if (detailText(change)) {
+                    <span class="text-left text-xs text-gray-400">{{ detailText(change) }}</span>
+                  }
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    </aside>
+  </div>
+</div>

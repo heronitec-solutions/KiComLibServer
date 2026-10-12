@@ -1,0 +1,21 @@
+# Build context is the repo root. The image only copies frontend/, backend/, and version.txt.
+# Keep local secrets and bulky outputs out of that context.
+
+.git
+.github
+docs
+deployment
+backend.Tests
+
+**/.env
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.angular
+
+backend/TestData
+backend/Data/Backups
+backend/Data/Repos
+backend/Data/ProjectCache
+backend/Data/Keys

@@ -1,0 +1,241 @@
+@KiComLibBackend_HostAddress = http://localhost:5229
+
+### API info (v2, read permission)
+GET {{KiComLibBackend_HostAddress}}/api/info
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### List symbols (from head view)
+GET {{KiComLibBackend_HostAddress}}/api/symbol
+Accept: application/json
+
+### Get symbol by id (raw data)
+GET {{KiComLibBackend_HostAddress}}/api/symbol/1
+Accept: application/json
+
+### Symbol preview SVG
+GET {{KiComLibBackend_HostAddress}}/api/symbol/preview/1
+Accept: text/plain
+
+### Symbol history
+GET {{KiComLibBackend_HostAddress}}/api/symbol/1/history
+Accept: application/json
+
+### Symbol revision
+GET {{KiComLibBackend_HostAddress}}/api/symbol/1/revision/1
+Accept: application/json
+
+### Symbol unified diff (flat object)
+# Response shape: { "format": "unified", "diff": "--- …\n+++ …" }
+GET {{KiComLibBackend_HostAddress}}/api/symbol/1/diff?from=1&to=2
+Accept: application/json
+
+### Footprint unified diff (flat object, same shape as symbol /diff)
+GET {{KiComLibBackend_HostAddress}}/api/footprint/1/diff?from=1&to=2
+Accept: application/json
+
+### List footprints (includes models[] per row, same shape as detail)
+GET {{KiComLibBackend_HostAddress}}/api/footprint
+Accept: application/json
+
+### Get footprint (includes models[])
+GET {{KiComLibBackend_HostAddress}}/api/footprint/1
+Accept: application/json
+
+### Footprint filter by library file
+GET {{KiComLibBackend_HostAddress}}/api/footprint?_filterby=LibraryFileId&_filter=1
+Accept: application/json
+
+### List model3d
+GET {{KiComLibBackend_HostAddress}}/api/model3d
+Accept: application/json
+
+### model3d filter by path
+GET {{KiComLibBackend_HostAddress}}/api/model3d?_filterby=path&_filter=Package_DFN_QFN/QFN-16.step
+Accept: application/json
+
+### model3d search by filename
+GET {{KiComLibBackend_HostAddress}}/api/model3d/searchbyfilename?_filename=QFN-16.step&_path=Package_DFN_QFN
+Accept: application/json
+
+### HEAD blob exists
+HEAD {{KiComLibBackend_HostAddress}}/api/blob/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+### Batch blob exists
+POST {{KiComLibBackend_HostAddress}}/api/blob/exists
+Content-Type: application/json
+
+[
+  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+]
+
+### PUT blob (raw body; set X-Media-Type)
+PUT {{KiComLibBackend_HostAddress}}/api/blob/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+Content-Type: application/octet-stream
+X-Media-Type: text/x-kicad-sexpr
+
+### GET blob
+GET {{KiComLibBackend_HostAddress}}/api/blob/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+### Create commit
+POST {{KiComLibBackend_HostAddress}}/api/commit
+Content-Type: application/json
+
+{
+  "message": "example commit",
+  "author": "Michael",
+  "client": "http-client",
+  "baseCommitId": 1,
+  "changes": [
+    {
+      "entity": "symbol",
+      "op": "create",
+      "blobHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "libraryFileId": 2,
+      "name": "ExampleSymbol",
+      "reference": "U",
+      "inBom": true,
+      "onBoard": true
+    }
+  ]
+}
+
+### List commits
+GET {{KiComLibBackend_HostAddress}}/api/commit?_limit=50&_offset=0
+Accept: application/json
+
+### Get commit
+GET {{KiComLibBackend_HostAddress}}/api/commit/1
+Accept: application/json
+
+### Commit diff (array of per-entity diffs)
+# Response shape: [ { "entity": "symbol", "id": 1, "revisionNo": 2, "diff": { "format": "unified", "diff": "…" } }, … ]
+# Note: per-entity GET /api/{entity}/{id}/diff returns the flat diff object directly;
+# GET /api/commit/{id}/diff wraps each in { entity, id, revisionNo, diff }.
+GET {{KiComLibBackend_HostAddress}}/api/commit/1/diff
+Accept: application/json
+
+### Sync changes since commit
+GET {{KiComLibBackend_HostAddress}}/api/sync/changes?sinceCommitId=0
+Accept: application/json
+
+### Legacy write endpoints return 410
+POST {{KiComLibBackend_HostAddress}}/api/symbol
+Content-Type: application/json
+
+{}
+
+###
+PUT {{KiComLibBackend_HostAddress}}/api/footprint/1
+Content-Type: application/json
+
+{}
+
+### KiCad HTTP library parts list
+GET {{KiComLibBackend_HostAddress}}/api/v1/parts/category/1.json
+Accept: application/json
+
+### Projects API info includes projectsApiVersion
+GET {{KiComLibBackend_HostAddress}}/api/info
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### List git hosts (admin)
+GET {{KiComLibBackend_HostAddress}}/api/git-host
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Create a self-hosted GitLab host (admin)
+POST {{KiComLibBackend_HostAddress}}/api/git-host
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "kind": "gitlab",
+  "name": "Example GitLab",
+  "webUrl": "https://gitlab.example.com",
+  "sshHost": "ssh://git@gitlab.example.com:22",
+  "allowHttp": false
+}
+
+### Create an HTTPS credential (admin). The token is not returned.
+POST {{KiComLibBackend_HostAddress}}/api/git-credential
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hostId": 1,
+  "name": "deploy-token",
+  "kind": "https_token",
+  "username": "gitlab+deploy-token-1",
+  "secret": "glpat-example-a1b2"
+}
+
+### Generate an SSH deploy key (admin). publicKey is returned once in the create response and stored.
+POST {{KiComLibBackend_HostAddress}}/api/git-credential
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hostId": 1,
+  "name": "deploy-key",
+  "kind": "ssh_key",
+  "generate": true
+}
+
+### Test a clone URL (admin)
+POST {{KiComLibBackend_HostAddress}}/api/git-repository/test
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hostId": 1,
+  "credentialId": 1,
+  "cloneUrl": "https://gitlab.com/group/project.git"
+}
+
+### Create a repository (admin). webhook.secret is shown only in this response.
+POST {{KiComLibBackend_HostAddress}}/api/git-repository
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hostId": 1,
+  "credentialId": 1,
+  "cloneUrl": "https://gitlab.com/group/project.git",
+  "trackedBranches": ["release/*"],
+  "tagPattern": "v*",
+  "syncMode": "webhook"
+}
+
+### Sync a repository now (admin) → 202
+POST {{KiComLibBackend_HostAddress}}/api/git-repository/1/sync
+Authorization: Bearer {{token}}
+
+### List readable projects
+GET {{KiComLibBackend_HostAddress}}/api/project?status=development&q=main
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Create a project (admin)
+POST {{KiComLibBackend_HostAddress}}/api/project
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "repositoryId": 1,
+  "projectFile": "hw/main/main.kicad_pro",
+  "name": "Main",
+  "status": "development"
+}
+
+### Replace project group access (admin)
+PUT {{KiComLibBackend_HostAddress}}/api/project/1/access
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+[
+  { "groupId": 2, "canWrite": false },
+  { "groupId": 3, "canWrite": true }
+]
+

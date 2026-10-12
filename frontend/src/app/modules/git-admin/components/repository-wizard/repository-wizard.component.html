@@ -1,0 +1,168 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>Add repository</h1>
+  <div class="spacer"></div>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <p class="text-sm text-gray-400">Step {{ step + 1 }} of 7</p>
+  @if (error) {
+    <p class="text-sm text-red-400">{{ error }}</p>
+  }
+  @if (message) {
+    <p class="text-sm text-green-400">{{ message }}</p>
+  }
+  @if (copied) {
+    <p class="text-sm text-green-400">{{ copied }}</p>
+  }
+
+  @if (step === 0) {
+    <section class="space-y-3">
+      <h2 class="panel-title">Host</h2>
+      <select class="input-dark" [(ngModel)]="hostId">
+        <option [ngValue]="null">Select a host</option>
+        @for (host of hosts; track host) {
+          <option [ngValue]="host.id">{{ host.name }}</option>
+        }
+      </select>
+      <button type="button" class="btn-outline" (click)="newHost()">New host</button>
+    </section>
+  }
+
+  @if (step === 1) {
+    <section class="space-y-3">
+      <h2 class="panel-title">Clone URL</h2>
+      <input class="input-dark" [(ngModel)]="cloneUrl" placeholder="https://gitlab.example.com/group/board.git" />
+      <p class="text-sm text-gray-400">HTTPS with an HTTPS token, or SSH as <span class="text-gray-200">ssh://git&#64;gitlab.example.com/group/board.git</span> with an SSH key. Do not put a token or password in the URL.</p>
+    </section>
+  }
+
+  @if (step === 2) {
+    <section class="space-y-3">
+      <h2 class="panel-title">Credential</h2>
+      <select class="input-dark" [(ngModel)]="credentialId">
+        <option [ngValue]="null">Select a credential</option>
+        @for (credential of hostCredentials; track credential) {
+          <option [ngValue]="credential.id">
+            {{ credential.name }} ({{ credential.secretHint || credential.kind }})
+          </option>
+        }
+      </select>
+      <button type="button" class="btn-outline" (click)="newCredential()">New credential</button>
+    </section>
+  }
+
+  @if (step === 3) {
+    <section class="space-y-3">
+      <h2 class="panel-title">Test</h2>
+      <p class="text-sm text-gray-400">KiComLib reads the remote with the selected credential and lists branches and tags.</p>
+      @if (busy) {
+        <p class="text-sm text-gray-400">Testing…</p>
+      }
+    </section>
+  }
+
+  @if (step === 4 && testResult) {
+    <section class="space-y-3">
+      <h2 class="panel-title">Branches and tags</h2>
+      <p class="text-sm text-gray-400">Default branch {{ testResult.defaultBranch || '—' }} is always tracked.</p>
+      @for (branch of testResult.branches; track branch) {
+        <label class="flex items-center gap-2 text-sm text-gray-200">
+          <input
+            type="checkbox"
+            [checked]="isTracked(branch)"
+            [disabled]="branch === testResult.defaultBranch"
+            (change)="toggleBranch(branch, $any($event.target).checked)"
+            />
+            <span>{{ branch }}</span>
+          </label>
+        }
+        <p class="text-sm text-gray-400">Tags: {{ testResult.tags.length ? testResult.tags.join(', ') : 'none' }}</p>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Tag pattern
+          <input class="input-dark" [(ngModel)]="tagPattern" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Sync
+          <select class="input-dark" [(ngModel)]="syncMode">
+            <option value="poll">Poll</option>
+            <option value="webhook">Webhook</option>
+          </select>
+        </label>
+      </section>
+    }
+
+    @if (step === 5) {
+      <section class="space-y-3">
+        <h2 class="panel-title">Webhook</h2>
+        <p class="text-sm text-gray-400">The secret is shown only this once. Copy it into the Git host before you leave this step.</p>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          URL
+          <input class="input-dark" readonly [value]="webhook?.url || ''" />
+        </label>
+        <button type="button" class="btn-outline" (click)="copy(webhook?.url || '', 'Webhook URL copied.')">Copy URL</button>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Secret
+          <input class="input-dark" readonly [value]="webhook?.secret || ''" />
+        </label>
+        <button type="button" class="btn-outline" (click)="copy(webhook?.secret || '', 'Webhook secret copied.')">Copy secret</button>
+        @if (webhook?.instructions) {
+          <pre class="whitespace-pre-wrap text-sm text-gray-200">{{ webhook?.instructions }}</pre>
+        }
+        @if (!webhook) {
+          <p class="text-sm text-gray-400">This host did not return webhook instructions. Polling still runs.</p>
+        }
+      </section>
+    }
+
+    @if (step === 6) {
+      <section class="space-y-3">
+        <h2 class="panel-title">KiCad projects</h2>
+        <div class="flex gap-2">
+          <button type="button" class="btn-outline" (click)="syncThenDiscover()" [disabled]="busy">Sync now</button>
+          <button type="button" class="btn-outline" (click)="loadDiscovered()" [disabled]="busy">Refresh</button>
+        </div>
+        @if (!discovered.length) {
+          <p class="text-sm text-gray-400">No .kicad_pro files yet. Sync the repository, then refresh.</p>
+        }
+        @for (row of discovered; track row) {
+          <div class="rounded-md border border-gray-800 p-3">
+            <label class="flex items-center gap-2 text-sm text-gray-200">
+              <input type="checkbox" [(ngModel)]="row.selected" [disabled]="row.alreadyProject" />
+              <span class="font-mono">{{ row.projectFile }}</span>
+            </label>
+            @if (row.alreadyProject) {
+              <p class="m-0 mt-1 text-xs text-gray-400">Already a project.</p>
+            }
+            @if (!row.alreadyProject) {
+              <input class="input-dark mt-2" [(ngModel)]="row.editName" />
+            }
+          </div>
+        }
+        <ul class="m-0 list-none space-y-1 p-0">
+          @for (project of created; track project) {
+            <li>
+              <a class="text-blue-400 hover:text-blue-300" [routerLink]="['/projects', project.id]" (click)="close()">{{ project.name }}</a>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button type="button" class="btn-outline" (click)="back()" [disabled]="step === 0 || data.startAtDiscover">Back</button>
+    @if (step < 5) {
+      <button type="button" class="btn-primary" (click)="next()" [disabled]="busy || (step === 0 && !hostId) || (step === 1 && !cloneUrl.trim()) || (step === 2 && !credentialId)">
+        {{ step === 3 ? 'Test' : (step === 4 ? 'Create repository' : 'Next') }}
+      </button>
+    }
+    @if (step === 5) {
+      <button type="button" class="btn-primary" (click)="goDiscover()">Find KiCad projects</button>
+    }
+    @if (step === 6) {
+      <button type="button" class="btn-primary" (click)="createProjects()" [disabled]="busy">Create projects</button>
+    }
+  </mat-dialog-actions>

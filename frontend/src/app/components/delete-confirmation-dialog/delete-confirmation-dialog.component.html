@@ -1,0 +1,19 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title>Delete entry</h1>
+</div>
+
+<mat-dialog-content class="mat-typography">
+  <div class="flex items-start gap-3 py-2">
+    <div class="icon-tile bg-red-900/20 p-2">
+      <mat-icon class="icon-24 text-red-400" fontSet="material-icons-outlined">warning_amber</mat-icon>
+    </div>
+    <p class="m-0 text-gray-300">
+      This entry will be permanently removed. This action cannot be undone.
+    </p>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button type="button" class="btn-outline" mat-dialog-close>Cancel</button>
+  <button type="button" class="btn-danger" [mat-dialog-close]="true" cdkFocusInitial>Delete</button>
+</mat-dialog-actions>

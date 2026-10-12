@@ -1,0 +1,134 @@
+<app-header
+  icon="view_in_ar"
+  pageTitle="CAD Models"
+  subtitle="3D models referenced by footprints"
+></app-header>
+
+<div class="page-container">
+  <div class="surface-panel mb-6 p-6">
+    <div class="mb-4 flex items-center gap-2">
+      <mat-icon class="icon-20 text-gray-400" fontSet="material-icons-outlined">filter_list</mat-icon>
+      <h3 class="panel-title">Search &amp; Filter</h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div class="relative">
+        <mat-icon
+          class="icon-16 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          fontSet="material-icons-outlined"
+        >search</mat-icon>
+        <input
+          type="text"
+          class="input-dark pl-10"
+          placeholder="Search CAD models..."
+          [ngModel]="filter.search"
+          (ngModelChange)="onSearchChange($event)"
+          />
+        </div>
+
+        <select class="input-dark" [ngModel]="filter.directory" (ngModelChange)="onDirectoryChange($event)">
+          <option [ngValue]="'all'">All directories</option>
+          @for (directory of directories; track directory) {
+            <option [ngValue]="directory">{{ directory }}</option>
+          }
+        </select>
+
+        @if (hasActiveFilters) {
+          <button type="button" class="btn-outline" (click)="clearFilters()">
+            <mat-icon class="icon-16" fontSet="material-icons-outlined">close</mat-icon>
+            <span>Clear Filters</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="surface-panel overflow-hidden">
+      <table
+        mat-table
+        matSort
+        matSortActive="id"
+        matSortDirection="asc"
+        matSortDisableClear
+        [dataSource]="dataSource"
+        (matSortChange)="sortData($event)"
+        >
+        <!-- ID Column -->
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="tiny_column"> ID </th>
+          <td mat-cell *matCellDef="let row" class="tiny_column"> {{row.id}} </td>
+        </ng-container>
+
+        <!-- Filename Column -->
+        <ng-container matColumnDef="filename">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> Filename </th>
+          <td mat-cell *matCellDef="let row"> {{row.filename}} </td>
+        </ng-container>
+
+        <!-- Directory Column -->
+        <ng-container matColumnDef="directory">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> Directory </th>
+          <td mat-cell *matCellDef="let row" class="mono-cell"> {{row.directory}} </td>
+        </ng-container>
+
+        <!-- File Size Column -->
+        <ng-container matColumnDef="fileSize">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> File Size </th>
+          <td mat-cell *matCellDef="let row" class="mono-cell"> {{row.fileSize | number}} </td>
+        </ng-container>
+
+        <!-- Hash Column -->
+        <ng-container matColumnDef="hash">
+          <th mat-header-cell *matHeaderCellDef> Hash </th>
+          <td mat-cell *matCellDef="let row" class="mono-cell" [matTooltip]="row.hash || row.fileHash || ''">
+            {{ shortHash(row) }}
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="actions_column"> Actions </th>
+          <td mat-cell *matCellDef="let row" class="actions_column">
+            @if (blobUrl(row); as url) {
+              <a
+                class="btn-icon text-blue-400 hover:text-blue-300"
+                [href]="url"
+                [attr.download]="row.filename"
+                aria-label="Download model"
+                (click)="$event.stopPropagation()"
+                >
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">download</mat-icon>
+              </a>
+            }
+            <button
+              type="button"
+              class="btn-icon text-blue-400 hover:text-blue-300"
+              aria-label="Revision history"
+              (click)="openHistory(row, $event)"
+              >
+              <mat-icon class="icon-16" fontSet="material-icons-outlined">history</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <mat-paginator
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        [pageSize]="25"
+        showFirstLastButtons
+        aria-label="Select page of CAD models"
+      ></mat-paginator>
+    </div>
+
+    @if ((dataSource.filteredCount$ | async) === 0 && (dataSource.isLoading$ | async) === false) {
+      <div class="surface-panel mt-6 py-12 text-center">
+        <mat-icon class="icon-48 mx-auto mb-4 text-gray-600" fontSet="material-icons-outlined">view_in_ar</mat-icon>
+        <h3 class="mb-2 text-lg font-medium text-white">No CAD models found</h3>
+        <p class="m-0 text-gray-400">
+          {{ hasActiveFilters ? 'Try adjusting your search or filters' : 'CAD models show up here once they are stored in the library.' }}
+        </p>
+      </div>
+    }
+  </div>

@@ -1,0 +1,85 @@
+<app-header
+  icon="info"
+  pageTitle="Info"
+  subtitle="About this installation"
+></app-header>
+
+<div class="page-container space-y-6">
+  @if (auth.profile().isAdmin) {
+    <section class="surface-panel p-6">
+      <h2 class="panel-title mb-3">Version</h2>
+      <p class="mb-4 text-sm text-gray-400">
+        Release of this installation, the KiCad HTTP library, the sync API, the database schema, and the KiCad runner.
+      </p>
+      @if (versionError) {
+        <p class="text-sm text-red-400">{{ versionError }}</p>
+      }
+      @if (versionLoading) {
+        <p class="text-sm text-gray-400">Loading version information…</p>
+      }
+      @if (!versionLoading && !versionError) {
+        <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+          <div>
+            <dt class="text-gray-400">Server</dt>
+            <dd class="m-0 font-mono text-white">{{ version || '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-gray-400">HTTP library</dt>
+            <dd class="m-0 font-mono text-white">{{ httpLibraryVersion || '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-gray-400">Sync API</dt>
+            <dd class="m-0 font-mono text-white">{{ apiVersion ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-gray-400">Database schema</dt>
+            <dd class="m-0 font-mono text-white">{{ schemaVersion ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-gray-400">KiCad</dt>
+            <dd class="m-0 font-mono text-white">{{ kicadVersion || '—' }}</dd>
+          </div>
+        </dl>
+      }
+    </section>
+  }
+
+  <section class="surface-panel p-6">
+    <h2 class="panel-title mb-4">License</h2>
+    <div class="max-w-3xl space-y-4 text-sm leading-6 text-gray-300">
+      <p class="text-base text-white">KiComLib keeps a shared library of parts, symbols, footprints and datasheets for KiCad.</p>
+      <p class="text-white">Copyright (C) 2026 Heronitec Solutions GmbH</p>
+      <p>
+        This program is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version.
+      </p>
+      <p>
+        This program is distributed in the hope that it will be useful,
+        but WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+        GNU General Public License for more details.
+      </p>
+      <p>
+        You should have received a copy of the GNU General Public License
+        along with this program. If not, see
+        <a class="text-blue-400 hover:text-blue-300" href="https://www.gnu.org/licenses/" target="_blank" rel="noopener noreferrer">https://www.gnu.org/licenses/</a>.
+      </p>
+    </div>
+
+    <div class="mt-6 border-t border-gray-800 pt-4 text-sm leading-6 text-gray-300">
+      <h3 class="mb-2 font-medium text-white">Contact</h3>
+      <p>Heronitec Solutions GmbH</p>
+      <p>Kreuzdelle 18</p>
+      <p>63872 Heimbuchenthal</p>
+      <p>Germany</p>
+      <p>
+        <a class="text-blue-400 hover:text-blue-300" href="mailto:info@heronitec-solutions.de">info@heronitec-solutions.de</a>
+      </p>
+      <p>
+        <a class="text-blue-400 hover:text-blue-300" href="https://github.com/heronitec-solutions/kicomlib" target="_blank" rel="noopener noreferrer">https://github.com/heronitec-solutions/kicomlib</a>
+      </p>
+    </div>
+  </section>
+</div>

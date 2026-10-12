@@ -1,0 +1,101 @@
+<div class="mb-4 flex flex-col gap-3 md:flex-row md:items-end">
+  <label class="flex flex-1 flex-col gap-1 text-sm text-gray-300">
+    Ref contains
+    <input class="input-dark" [(ngModel)]="refFilter" (keyup.enter)="applyFilter()" />
+  </label>
+  <label class="flex items-center gap-2 text-sm text-gray-300">
+    <input type="checkbox" [(ngModel)]="includeUnreachable" (change)="applyFilter()" />
+    <span>Include unreachable</span>
+  </label>
+  <button type="button" class="btn-outline" (click)="applyFilter()">Apply</button>
+</div>
+
+@if (error) {
+  <p class="mb-4 text-sm text-red-400">{{ error }}</p>
+}
+@if (loading) {
+  <p class="mb-4 text-sm text-gray-400">Loading revisions…</p>
+}
+
+<div class="surface-panel overflow-hidden">
+  <table mat-table [dataSource]="rows">
+    <ng-container matColumnDef="sha">
+      <th mat-header-cell *matHeaderCellDef> SHA </th>
+      <td mat-cell *matCellDef="let row" class="mono-cell" [attr.title]="row.commitSha">
+        <span class="inline-flex items-center gap-2">
+          {{ shortSha(row.commitSha) }}
+          @if (isSelected(row)) {
+            <span class="badge bg-blue-600 text-white">Selected</span>
+          }
+        </span>
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="message">
+      <th mat-header-cell *matHeaderCellDef> Message </th>
+      <td mat-cell *matCellDef="let row" class="max-w-xs whitespace-pre-line" [attr.title]="row.message">{{ row.message }}</td>
+    </ng-container>
+    <ng-container matColumnDef="author">
+      <th mat-header-cell *matHeaderCellDef> Author </th>
+      <td mat-cell *matCellDef="let row">{{ row.authorName }}</td>
+    </ng-container>
+    <ng-container matColumnDef="date">
+      <th mat-header-cell *matHeaderCellDef> Date </th>
+      <td mat-cell *matCellDef="let row" class="mono-cell">{{ row.committedAt ? (row.committedAt | date:'medium') : '—' }}</td>
+    </ng-container>
+    <ng-container matColumnDef="refs">
+      <th mat-header-cell *matHeaderCellDef> Refs </th>
+      <td mat-cell *matCellDef="let row">{{ row.refs.length ? row.refs.join(', ') : '—' }}</td>
+    </ng-container>
+    <ng-container matColumnDef="analysis">
+      <th mat-header-cell *matHeaderCellDef> Analysis </th>
+      <td mat-cell *matCellDef="let row">
+        <span class="badge badge-muted" [attr.title]="row.analysisError">{{ analysisLabel(row.analysisStatus) }}</span>
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="counts">
+      <th mat-header-cell *matHeaderCellDef> Counts </th>
+      <td mat-cell *matCellDef="let row">{{ row.componentCount }} components, {{ row.warningCount }} warnings</td>
+    </ng-container>
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef> Actions </th>
+      <td mat-cell *matCellDef="let row">
+        <div class="flex gap-2">
+          @if (!isSelected(row)) {
+            <button type="button" class="btn-outline" (click)="use(row)">Use</button>
+          }
+          @if (isSelected(row)) {
+            <span class="inline-flex items-center text-sm text-blue-300">In use</span>
+          }
+          @if (canWrite) {
+            <button type="button" class="btn-outline" (click)="analyze(row)" [disabled]="busySha === row.commitSha">Analyze</button>
+          }
+          @if (canWrite) {
+            <button type="button" class="btn-outline" (click)="rematch(row)" [disabled]="busySha === row.commitSha">Rematch</button>
+          }
+        </div>
+      </td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr
+      mat-row
+      *matRowDef="let row; columns: columns;"
+      class="cursor-pointer"
+      tabindex="0"
+      [class.revision-selected]="isSelected(row)"
+      (click)="onRowClick(row, $event)"
+      (keydown.enter)="onRowClick(row, $event)"
+    ></tr>
+  </table>
+  @if (!loading && !rows.length) {
+    <p class="p-6 text-sm text-gray-400">No revisions yet.</p>
+  }
+  <mat-paginator
+    [length]="total"
+    [pageIndex]="pageIndex"
+    [pageSize]="pageSize"
+    [pageSizeOptions]="[10, 25, 50, 100]"
+    showFirstLastButtons
+    aria-label="Select page of revisions"
+    (page)="onPage($event)"
+  ></mat-paginator>
+</div>

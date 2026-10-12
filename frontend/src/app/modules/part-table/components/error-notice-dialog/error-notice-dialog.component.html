@@ -1,0 +1,22 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>Error</h1>
+  <div class="spacer"></div>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <p class="m-0 text-gray-200">{{ data.message }}</p>
+  @if (data.details.length) {
+    <ul class="m-0 mt-3 list-disc pl-5 text-sm text-gray-300">
+      @for (detail of data.details; track detail) {
+        <li>{{ detail }}</li>
+      }
+    </ul>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button type="button" class="btn-primary" (click)="close()">OK</button>
+</mat-dialog-actions>

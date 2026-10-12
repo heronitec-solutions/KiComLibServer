@@ -1,0 +1,147 @@
+<app-header
+  icon="history"
+  pageTitle="Commit"
+  [subtitle]="commit?.message || 'Commit details'"
+  >
+  @if (canRevertCommit()) {
+    <button
+      type="button"
+      class="btn-outline"
+      [disabled]="isReverting"
+      (click)="revertCommit()"
+      >
+      <mat-icon class="icon-16" fontSet="material-icons-outlined">undo</mat-icon>
+      <span>Revert commit</span>
+    </button>
+  }
+  <button type="button" class="btn-outline" (click)="back()">
+    <mat-icon class="icon-16" fontSet="material-icons-outlined">arrow_back</mat-icon>
+    <span>Back</span>
+  </button>
+</app-header>
+
+<div class="page-container">
+  @if (isLoading) {
+    <div class="surface-panel p-6 text-gray-400">Loading commit…</div>
+  }
+  @if (!isLoading && loadError) {
+    <div class="surface-panel p-6 text-red-400">{{ loadError }}</div>
+  }
+  @if (actionError) {
+    <div class="surface-panel mb-6 p-4 text-red-400">{{ actionError }}</div>
+  }
+
+  @if (!isLoading && commit) {
+    <div class="surface-panel mb-6 p-6">
+      <h2 class="panel-title mb-3">{{ commit.message }}</h2>
+      <dl class="grid grid-cols-1 gap-3 text-sm md:grid-cols-4">
+        <div>
+          <dt class="text-gray-400">Author</dt>
+          <dd class="m-0 text-white">{{ commit.author }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-400">Client</dt>
+          <dd class="m-0 mono-cell">{{ commit.client || '—' }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-400">Created</dt>
+          <dd class="m-0 mono-cell">{{ commit.createdAt | date:'medium' }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-400">Changes</dt>
+          <dd class="m-0">
+            <span class="badge badge-muted">{{ commit.changes.length }}</span>
+          </dd>
+        </div>
+      </dl>
+    </div>
+    <div class="surface-panel overflow-hidden">
+      <table mat-table [dataSource]="commit.changes" multiTemplateDataRows>
+        <ng-container matColumnDef="entity">
+          <th mat-header-cell *matHeaderCellDef> Entity </th>
+          <td mat-cell *matCellDef="let row">
+            <span class="badge badge-muted">{{ row.entity }}</span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="op">
+          <th mat-header-cell *matHeaderCellDef> Op </th>
+          <td mat-cell *matCellDef="let row">
+            <span class="badge" [ngClass]="opBadgeClass(row.op)">{{ row.op }}</span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef> Name </th>
+          <td mat-cell *matCellDef="let row"> {{ row.name }} </td>
+        </ng-container>
+        <ng-container matColumnDef="revisionNo">
+          <th mat-header-cell *matHeaderCellDef> Rev </th>
+          <td mat-cell *matCellDef="let row" class="mono-cell"> {{ row.revisionNo }} </td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="actions_column"> </th>
+          <td mat-cell *matCellDef="let row" class="actions_column">
+            <div class="flex space-x-1">
+              <button
+                type="button"
+                class="btn-icon text-blue-400 hover:text-blue-300"
+                aria-label="Show diff"
+                (click)="toggleDiff(row); $event.stopPropagation()"
+                >
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">
+                  {{ expandedChangeKey === changeKey(row) ? 'expand_less' : 'difference' }}
+                </mat-icon>
+              </button>
+              <button
+                type="button"
+                class="btn-icon text-blue-400 hover:text-blue-300"
+                aria-label="Element history"
+                (click)="openHistory(row, $event)"
+                >
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">history</mat-icon>
+              </button>
+              @if (auth.canWrite()) {
+                <button
+                  type="button"
+                  class="btn-icon text-yellow-400 hover:text-yellow-300"
+                  aria-label="Undo this change"
+                  [disabled]="!row.isHead || isReverting || !canRevertCommit()"
+                  [title]="row.isHead ? 'Undo this change' : 'A later change exists. Restore a revision from the element history.'"
+                  (click)="revertChange(row); $event.stopPropagation()"
+                  >
+                  <mat-icon class="icon-16" fontSet="material-icons-outlined">undo</mat-icon>
+                </button>
+              }
+            </div>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="expandedDetail">
+          <td mat-cell *matCellDef="let row" [attr.colspan]="displayedColumns.length">
+            @if (expandedChangeKey === changeKey(row)) {
+              <div class="expanded-diff p-4">
+                @if (isLoadingDiff) {
+                  <div class="text-sm text-gray-400">Loading diff…</div>
+                }
+                @if (!isLoadingDiff) {
+                  <diff-view [diff]="expandedDiff"></diff-view>
+                }
+              </div>
+            }
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: displayedColumns;"
+          class="cursor-pointer"
+          (click)="toggleDiff(row)"
+        ></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: ['expandedDetail'];"
+          class="expanded-row"
+          [class.hidden-row]="expandedChangeKey !== changeKey(row)"
+        ></tr>
+      </table>
+    </div>
+  }
+</div>

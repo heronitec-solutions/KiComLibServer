@@ -1,0 +1,16 @@
+table {
+  width: 100%;
+}
+
+dl {
+  margin: 0;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+:host ::ng-deep product-image.detail .product-image-frame {
+  width: 16rem;
+  height: 16rem;
+}

@@ -1,0 +1,14 @@
+.app-shell {
+  height: 100vh;
+}
+
+.app-sidebar {
+  width: 16rem;
+}
+
+// The routed pages render their own full-bleed page header, so the content
+// region must not add padding of its own.
+.app-content {
+  display: flex;
+  flex-direction: column;
+}

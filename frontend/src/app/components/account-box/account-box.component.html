@@ -1,0 +1,38 @@
+@if (auth.profile().authenticated) {
+  <button
+    type="button"
+    class="btn-outline"
+    [matMenuTriggerFor]="accountMenu"
+    aria-label="Account menu"
+    >
+    <span class="rounded-full bg-blue-600 p-1.5">
+      <mat-icon class="icon-16 flex text-white" fontSet="material-icons-outlined">person</mat-icon>
+    </span>
+    <span class="text-sm font-medium">{{ auth.profile().username }}</span>
+    @if (showReadOnlyBadge()) {
+      <span class="badge badge-muted">Read only</span>
+    }
+    <mat-icon class="icon-16" fontSet="material-icons-outlined">expand_more</mat-icon>
+  </button>
+}
+
+<mat-menu #accountMenu="matMenu" xPosition="before" class="account-menu">
+  <div class="px-4 py-2 text-sm">
+    <div class="font-semibold text-gray-300">{{ auth.profile().username }}</div>
+    <div class="text-gray-400">Catalog: {{ catalogAccess() }}</div>
+    <div class="text-gray-400">Warehouse: {{ warehouseAccess() }}</div>
+  </div>
+  <mat-divider></mat-divider>
+
+  <button mat-menu-item (click)="openAccount()">
+    <mat-icon fontSet="material-icons-outlined">person</mat-icon>
+    <span>My Account</span>
+  </button>
+
+  <mat-divider></mat-divider>
+
+  <button mat-menu-item (click)="logout()">
+    <mat-icon fontSet="material-icons-outlined">logout</mat-icon>
+    <span>Logout</span>
+  </button>
+</mat-menu>

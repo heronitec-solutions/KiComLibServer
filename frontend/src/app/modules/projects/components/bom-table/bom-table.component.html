@@ -1,0 +1,82 @@
+<div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
+  <label class="flex flex-col gap-1 text-sm text-gray-300">
+    Grouping
+    <select class="input-dark" [ngModel]="group" (ngModelChange)="onGroup($event)">
+      <option value="part">By catalog part</option>
+      <option value="none">Each component</option>
+    </select>
+  </label>
+  <label class="mt-6 flex items-center gap-2 text-sm text-gray-300">
+    <input type="checkbox" [(ngModel)]="problemsOnly" />
+    <span>Problems only</span>
+  </label>
+</div>
+
+@if (error) {
+  <p class="mb-4 text-sm text-red-400">{{ error }}</p>
+}
+@if (loading) {
+  <p class="mb-4 text-sm text-gray-400">Loading bill of materials…</p>
+}
+@if (!sha) {
+  <p class="text-sm text-gray-400">Select a revision to see its bill of materials.</p>
+}
+
+@if (sha) {
+  <div class="surface-panel overflow-hidden">
+    <table mat-table [dataSource]="visibleLines">
+      <ng-container matColumnDef="reference">
+        <th mat-header-cell *matHeaderCellDef> Reference </th>
+        <td mat-cell *matCellDef="let row" class="mono-cell">{{ row.reference }}</td>
+      </ng-container>
+      <ng-container matColumnDef="value">
+        <th mat-header-cell *matHeaderCellDef> Value </th>
+        <td mat-cell *matCellDef="let row">{{ row.value || '—' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="footprint">
+        <th mat-header-cell *matHeaderCellDef> Footprint </th>
+        <td mat-cell *matCellDef="let row" class="mono-cell">{{ row.footprint || '—' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="mpn">
+        <th mat-header-cell *matHeaderCellDef> MPN </th>
+        <td mat-cell *matCellDef="let row" class="mono-cell">{{ row.mpn || '—' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="quantity">
+        <th mat-header-cell *matHeaderCellDef> Qty </th>
+        <td mat-cell *matCellDef="let row">{{ row.quantity }}</td>
+      </ng-container>
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef> Status </th>
+        <td mat-cell *matCellDef="let row">
+          @for (status of statuses(row); track status) {
+            <span
+              class="badge bom-status mr-1"
+              [ngClass]="statusClass(status)"
+            >{{ statusLabel(status) }}</span>
+          }
+          @if (row.outdatedFields.length) {
+            <span class="ml-1 text-xs text-gray-400">{{ row.outdatedFields.join(', ') }}</span>
+          }
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="part">
+        <th mat-header-cell *matHeaderCellDef> Catalog part </th>
+        <td mat-cell *matCellDef="let row">
+          @if (row.partId) {
+            <button type="button" class="text-blue-400 hover:text-blue-300" (click)="openPart(row)">
+              {{ row.partName || ('Part #' + row.partId) }}
+            </button>
+          }
+          @if (!row.partId) {
+            <span>—</span>
+          }
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+    </table>
+    @if (!loading && !visibleLines.length) {
+      <p class="p-6 text-sm text-gray-400">No components match this view.</p>
+    }
+  </div>
+}

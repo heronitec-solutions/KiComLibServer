@@ -1,0 +1,48 @@
+:host .btn[aria-busy='true'] {
+  opacity: 1;
+}
+
+.busy-spinner {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  border: 2px solid rgba(148, 163, 184, 0.35);
+  border-top-color: #60a5fa;
+  border-radius: 9999px;
+  animation: backup-spin 0.8s linear infinite;
+}
+
+.busy-spinner-on-primary {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+}
+
+.backup-progress {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: rgb(31 41 55);
+}
+
+.backup-progress-bar {
+  height: 100%;
+  border-radius: 9999px;
+  background: #3b82f6;
+  transition: width 150ms ease;
+}
+
+@keyframes backup-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .busy-spinner {
+    animation: none;
+  }
+
+  .backup-progress-bar {
+    transition: none;
+  }
+}

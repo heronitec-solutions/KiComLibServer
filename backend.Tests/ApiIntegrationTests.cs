@@ -1384,6 +1384,52 @@ public class AccessControlTests
         Assert.Equal(HttpStatusCode.Unauthorized, (await rejected.GetAsync("/api/auth/me")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await rejected.PostAsJsonAsync("/api/manufacturer", new { name = "Nope" })).StatusCode);
     }
+
+    [Fact]
+    public async Task StaleSessionCookie_ServesTheLoginPage_And_StillRejectsApiCalls()
+    {
+        if (!_factory.DatabaseAvailable)
+        {
+            return;
+        }
+
+        HttpClient client = _factory.CreateClient();
+        const string stale = "kicomlib_session=kps_from-a-previous-installation";
+
+        using HttpRequestMessage home = new(HttpMethod.Get, "/");
+        home.Headers.TryAddWithoutValidation("Cookie", stale);
+        HttpResponseMessage homeResponse = await client.SendAsync(home);
+        string homeBody = await homeResponse.Content.ReadAsStringAsync();
+        Assert.NotEqual(HttpStatusCode.Unauthorized, homeResponse.StatusCode);
+        Assert.DoesNotContain("Invalid API token", homeBody, StringComparison.Ordinal);
+        Assert.Contains(SessionCookies.Name + "=", JoinedSetCookie(homeResponse), StringComparison.OrdinalIgnoreCase);
+
+        using HttpRequestMessage loginPage = new(HttpMethod.Get, "/login");
+        loginPage.Headers.TryAddWithoutValidation("Cookie", stale);
+        HttpResponseMessage loginResponse = await client.SendAsync(loginPage);
+        string loginBody = await loginResponse.Content.ReadAsStringAsync();
+        Assert.NotEqual(HttpStatusCode.Unauthorized, loginResponse.StatusCode);
+        Assert.DoesNotContain("Invalid API token", loginBody, StringComparison.Ordinal);
+
+        using HttpRequestMessage me = new(HttpMethod.Get, "/api/auth/me");
+        me.Headers.TryAddWithoutValidation("Cookie", stale);
+        HttpResponseMessage meResponse = await client.SendAsync(me);
+        string meBody = await meResponse.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.Unauthorized, meResponse.StatusCode);
+        Assert.Contains("Invalid API token", meBody, StringComparison.Ordinal);
+        Assert.Contains("expires=", JoinedSetCookie(meResponse), StringComparison.OrdinalIgnoreCase);
+
+        HttpResponseMessage anonymous = await client.GetAsync("/api/auth/me");
+        Assert.Equal(HttpStatusCode.OK, anonymous.StatusCode);
+        Assert.False(JsonDocument.Parse(await anonymous.Content.ReadAsStringAsync()).RootElement.GetProperty("authenticated").GetBoolean());
+    }
+
+    private static string JoinedSetCookie(HttpResponseMessage response)
+    {
+        return response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? values)
+            ? string.Join('\n', values)
+            : "";
+    }
 }
 
 public class AccessTokenHeaderTests

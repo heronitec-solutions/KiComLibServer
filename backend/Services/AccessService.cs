@@ -379,10 +379,21 @@ namespace KiComLibBackend.Services
             string path = (context.Request.Path.Value ?? "").TrimEnd('/').ToLowerInvariant();
             string method = context.Request.Method;
             bool login = method == HttpMethods.Post && path == "/api/auth/login";
+            // A session cookie from a previous installation is unknown after a fresh setup.
+            // Reject it on API calls, but still serve the login page and drop the cookie.
+            bool apiRequest = path == "/api" || path.StartsWith("/api/", StringComparison.Ordinal);
             if (caller.TokenRejected && !login)
             {
-                await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, "Invalid API token");
-                return;
+                if (AccessService.ExtractToken(context.Request) == null)
+                {
+                    SessionCookies.Clear(context.Response, context.Request);
+                }
+
+                if (apiRequest)
+                {
+                    await WriteErrorAsync(context, StatusCodes.Status401Unauthorized, "Invalid API token");
+                    return;
+                }
             }
 
             bool cookieMutation = method == HttpMethods.Post

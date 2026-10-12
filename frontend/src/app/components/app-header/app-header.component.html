@@ -1,0 +1,33 @@
+<header class="border-b border-gray-800 bg-gray-900 shadow-sm">
+  <div class="mx-auto max-w-full px-4 py-6 sm:px-6 lg:px-8">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-center space-x-3">
+        <button
+          type="button"
+          class="btn-icon text-gray-400 hover:text-white"
+          aria-label="Toggle navigation"
+          (click)="toggleSidebar()"
+          >
+          <mat-icon class="icon-20" fontSet="material-icons-outlined">menu</mat-icon>
+        </button>
+
+        <div class="flex items-center space-x-3">
+          <div class="icon-tile bg-blue-600">
+            <mat-icon class="icon-32 text-white" fontSet="material-icons-outlined">{{ icon }}</mat-icon>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold text-white">{{ pageTitle || routeTitle }}</h1>
+            @if (subtitle) {
+              <p class="text-gray-400">{{ subtitle }}</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex items-center space-x-3 lg:mt-0">
+        <ng-content></ng-content>
+        <account-box></account-box>
+      </div>
+    </div>
+  </div>
+</header>

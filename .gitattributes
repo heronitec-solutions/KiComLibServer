@@ -1,0 +1,3 @@
+# .editorconfig requires CRLF for C#. GitHub Actions checks out LF unless this is set,
+# and then `dotnet format --verify-no-changes` rewrites every file.
+*.cs text eol=crlf

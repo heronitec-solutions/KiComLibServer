@@ -1,0 +1,117 @@
+<app-header
+  icon="tune"
+  pageTitle="Settings"
+  subtitle="System options stored with the library"
+  >
+</app-header>
+
+<div class="page-container space-y-6">
+  @if (error) {
+    <p class="surface-panel p-4 text-red-400">{{ error }}</p>
+  }
+  @if (message) {
+    <p class="surface-panel p-4 text-green-400">{{ message }}</p>
+  }
+
+  @if (isLoading) {
+    <div class="surface-panel p-6 text-gray-400">Loading settings…</div>
+  }
+
+  @if (!isLoading) {
+    <section class="surface-panel p-6">
+      <h2 class="panel-title mb-3">Session</h2>
+      <p class="mb-4 text-sm text-gray-400">
+        Web sessions expire this many days after sign-in. Using the library does not extend them.
+        API tokens stay valid until they are revoked.
+        Settings are stored in the database and are included in backups.
+      </p>
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Session lifetime (days)
+          <input class="input-dark w-32" type="number" min="1" max="365" step="1" [(ngModel)]="sessionLifetimeDays" [disabled]="isSaving" />
+        </label>
+        <button type="button" class="btn-primary shrink-0" (click)="save()" [disabled]="isSaving">
+          {{ isSaving ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+    </section>
+  }
+
+  @if (!isLoading) {
+    <section class="surface-panel p-6">
+      <h2 class="panel-title mb-3">Git and projects</h2>
+      <p class="mb-4 text-sm text-gray-400">
+        How often repositories are polled, how many commits one sync records, and which library nicknames count as KiComLib when matching schematic symbols by name. Recent commits are kept for comparison together with tags, up to the commit limit.
+      </p>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Git poll interval (minutes)
+          <input class="input-dark" type="number" min="1" step="1" [(ngModel)]="gitPollIntervalMinutes" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Webhook safety poll (minutes)
+          <input class="input-dark" type="number" min="1" step="1" [(ngModel)]="gitWebhookPollIntervalMinutes" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Max commits per sync
+          <input class="input-dark" type="number" min="1" step="1" [(ngModel)]="projectMaxCommitsPerSync" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          Tags imported initially
+          <input class="input-dark" type="number" min="0" step="1" [(ngModel)]="projectInitialTags" [disabled]="isSaving" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-300 md:col-span-2">
+          KiComLib library nicknames
+          <input class="input-dark" [(ngModel)]="kicomlibLibraryNicknames" [disabled]="isSaving" />
+        </label>
+      </div>
+      <button type="button" class="btn-primary mt-4" (click)="save()" [disabled]="isSaving">
+        {{ isSaving ? 'Saving…' : 'Save' }}
+      </button>
+    </section>
+  }
+
+  @if (!isLoading) {
+    <section class="surface-panel p-6">
+      <h2 class="panel-title mb-3">KiCad runner</h2>
+      <p class="mb-4 text-sm text-gray-400">Reported by the server. This status is read-only.</p>
+      <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-gray-400">Runner</dt>
+          <dd class="m-0 text-white">{{ runnerReachable ? 'Reachable' : 'Not reachable' }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-400">KiCad version</dt>
+          <dd class="m-0 font-mono text-white">{{ runnerKicad || '—' }}</dd>
+        </div>
+      </dl>
+    </section>
+  }
+
+  @if (!isLoading) {
+    <section class="surface-panel p-6">
+      <h2 class="panel-title mb-3">Version</h2>
+      <p class="mb-4 text-sm text-gray-400">
+        Release of this installation, the KiCad HTTP library, the sync API, and the database schema.
+      </p>
+      <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+        <div>
+          <dt class="text-gray-400">Server</dt>
+          <dd class="m-0 font-mono text-white">{{ version || '—' }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-400">HTTP library</dt>
+          <dd class="m-0 font-mono text-white">{{ httpLibraryVersion || '—' }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-400">Sync API</dt>
+          <dd class="m-0 font-mono text-white">{{ apiVersion ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-400">Database schema</dt>
+          <dd class="m-0 font-mono text-white">{{ schemaVersion ?? '—' }}</dd>
+        </div>
+      </dl>
+    </section>
+  }
+</div>

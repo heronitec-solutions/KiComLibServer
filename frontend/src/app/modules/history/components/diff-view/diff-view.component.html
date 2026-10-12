@@ -1,0 +1,43 @@
+@if (!diff) {
+  <div class="diff-empty text-sm text-gray-400">{{ emptyMessage }}</div>
+}
+
+@if (isUnified) {
+  <div class="diff-unified" [innerHTML]="unifiedHtml" data-testid="unified-diff"></div>
+}
+
+@if (isBinary && binaryDiff) {
+  <div class="diff-binary overflow-x-auto" data-testid="binary-diff">
+    <table class="w-full text-sm">
+      <thead>
+        <tr>
+          <th class="px-2 py-1 text-left text-gray-400">Field</th>
+          <th class="px-2 py-1 text-left text-gray-400">Old</th>
+          <th class="px-2 py-1 text-left text-gray-400">New</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="px-2 py-1 text-gray-400">Filename</td>
+          <td class="mono-cell px-2 py-1">{{ binaryDiff.from?.filename || '—' }}</td>
+          <td class="mono-cell px-2 py-1">{{ binaryDiff.to?.filename || '—' }}</td>
+        </tr>
+        <tr>
+          <td class="px-2 py-1 text-gray-400">Directory</td>
+          <td class="mono-cell px-2 py-1">{{ binaryDiff.from?.directory || '—' }}</td>
+          <td class="mono-cell px-2 py-1">{{ binaryDiff.to?.directory || '—' }}</td>
+        </tr>
+        <tr>
+          <td class="px-2 py-1 text-gray-400">Size</td>
+          <td class="mono-cell px-2 py-1">{{ binaryDiff.from?.size ?? '—' }}</td>
+          <td class="mono-cell px-2 py-1">{{ binaryDiff.to?.size ?? '—' }}</td>
+        </tr>
+        <tr>
+          <td class="px-2 py-1 text-gray-400">Hash</td>
+          <td class="mono-cell px-2 py-1 break-all">{{ binaryDiff.from?.hash || '—' }}</td>
+          <td class="mono-cell px-2 py-1 break-all">{{ binaryDiff.to?.hash || '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+}

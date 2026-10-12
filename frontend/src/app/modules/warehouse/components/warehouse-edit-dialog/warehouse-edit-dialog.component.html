@@ -1,0 +1,197 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>{{ data.item ? 'Edit stock' : 'Add stock' }}</h1>
+  <div class="spacer"></div>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  @if (error) {
+    <p class="mb-4 text-sm text-red-400">{{ error }}</p>
+  }
+
+  <div class="mb-4 flex flex-col gap-2 text-sm text-gray-300">
+    <label class="flex items-center gap-2">
+      <input type="radio" name="stock-source" [checked]="!manual" [disabled]="!catalogAllowed" (change)="setManual(false)" />
+      <span>From the catalog</span>
+    </label>
+    <label class="flex items-center gap-2">
+      <input type="radio" name="stock-source" [checked]="manual" (change)="setManual(true)" />
+      <span>Manual entry, without a catalog link</span>
+    </label>
+    @if (!catalogAllowed) {
+      <p class="m-0 text-gray-400">Catalog read permission is required to link a part. A manual entry is still available.</p>
+    }
+  </div>
+
+  @if (!manual) {
+    <div class="dialog-section">
+      <h3 class="dialog-section-title">Catalog part</h3>
+      @if (partId) {
+        <div class="flex items-center justify-between gap-3 text-sm">
+          <span class="flex items-center gap-3 text-white">
+            @if (productImageUrl) {
+              <product-image class="thumb" [fetchUrl]="productImageUrl" [alt]="selectedPartName"></product-image>
+            }
+            <span>{{ selectedPartName }}</span>
+          </span>
+          @if (catalogAllowed) {
+            <button type="button" class="btn-outline" (click)="clearPart()">Change</button>
+          }
+        </div>
+      }
+      @if (!partId) {
+        <div>
+          <input
+            class="input-dark mb-3"
+            placeholder="Search parts by name or value"
+            [ngModel]="partQuery"
+            (ngModelChange)="onPartQuery($event)"
+            />
+            @if (partsLoading) {
+              <p class="m-0 text-sm text-gray-400">Loading parts…</p>
+            }
+            @if (partsError) {
+              <p class="m-0 text-sm text-red-400">{{ partsError }}</p>
+            }
+            @if (!partsLoading && !partsError) {
+              <div class="flex max-h-52 flex-col gap-1 overflow-y-auto">
+                @for (part of partMatches; track part) {
+                  <button
+                    type="button"
+                    class="flex items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm hover:bg-gray-800"
+                    [disabled]="isTaken(part.id)"
+                    (click)="selectPart(part)"
+                    >
+                    <span>
+                      <span class="text-white">{{ part.name }}</span>
+                      @if (part.value) {
+                        <span class="text-gray-400"> · {{ part.value }}</span>
+                      }
+                    </span>
+                    @if (isTaken(part.id)) {
+                      <span class="text-xs text-gray-500">Already stocked</span>
+                    }
+                  </button>
+                }
+                @if (!partMatches.length) {
+                  <p class="m-0 text-sm text-gray-400">No matching parts.</p>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    @if (manual) {
+      <div class="dialog-section">
+        <h3 class="dialog-section-title">Image</h3>
+        <div class="flex flex-wrap items-start gap-4">
+          <product-image [fetchUrl]="imagePreviewUrl" [alt]="name || 'Product image'"></product-image>
+          <div class="flex min-w-0 flex-1 flex-col items-start gap-2">
+            <div class="flex flex-wrap gap-2">
+              <input
+                #imageInput
+                type="file"
+                class="hidden"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                (change)="onImageFile($event)"
+                />
+                <button type="button" class="btn-outline" (click)="imageInput.click()" [disabled]="imageUploading || saving">
+                  <span>{{ imageUploading ? 'Uploading…' : 'Upload image' }}</span>
+                </button>
+                <button type="button" class="btn-outline" (click)="clearImage()" [disabled]="!imagePreviewUrl || imageUploading">
+                  Remove
+                </button>
+              </div>
+              <p class="m-0 text-sm text-gray-400">JPEG, PNG, GIF or WebP, up to 5 MB. The photo is stored with this manual entry.</p>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (manual) {
+        <div class="dialog-grid">
+          <mat-form-field appearance="fill" class="dialog-grid-full">
+            <mat-label>Name</mat-label>
+            <input matInput [(ngModel)]="name" required />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Value</mat-label>
+            <input matInput [(ngModel)]="value" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Note</mat-label>
+            <input matInput [(ngModel)]="comment" />
+          </mat-form-field>
+        </div>
+      }
+
+      @if (!manual) {
+        <mat-form-field appearance="fill" class="mt-4 w-full">
+          <mat-label>Note</mat-label>
+          <input matInput [(ngModel)]="comment" />
+        </mat-form-field>
+      }
+
+      <div class="dialog-section mt-4">
+        <h3 class="dialog-section-title">Batches</h3>
+        <p class="mb-3 text-sm text-gray-400">
+          A quantity of 0 is stored as the batch Empty. Ordered, Received, In Stock, Reserved and any other name are for stock that still has a quantity.
+        </p>
+
+        @for (batch of batches; track batch; let index = $index) {
+          <div class="mb-3 grid grid-cols-1 items-center gap-2 md:grid-cols-[minmax(0,1.2fr)_6rem_minmax(0,1fr)_auto]">
+            <input
+              class="input-dark"
+              [ngModel]="batch.quantity === 0 ? 'Empty' : batch.name"
+              (ngModelChange)="batch.name = $event"
+              [disabled]="batch.quantity === 0"
+              placeholder="Batch name"
+              [attr.aria-label]="'Batch name ' + (index + 1)"
+              />
+              <input
+                type="number"
+                class="input-dark"
+                min="0"
+                step="1"
+                [ngModel]="batch.quantity"
+                (ngModelChange)="onQuantityChange(batch, $event)"
+                aria-label="Quantity"
+                />
+                <input
+                  class="input-dark"
+                  [(ngModel)]="batch.location"
+                  placeholder="Location"
+                  aria-label="Location"
+                  />
+                  <button type="button" class="btn-icon text-red-400 hover:text-red-300" aria-label="Remove batch" (click)="removeBatch(index)">
+                    <mat-icon class="icon-16" fontSet="material-icons-outlined">delete_forever</mat-icon>
+                  </button>
+                  @if (batch.quantity > 0) {
+                    <div class="flex flex-wrap gap-2 md:col-span-4">
+                      @for (suggestion of suggestions; track suggestion) {
+                        <button
+                          type="button"
+                          class="btn-outline"
+                          (click)="useSuggestion(batch, suggestion)"
+                        >{{ suggestion }}</button>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
+              <button type="button" class="btn-outline" (click)="addBatch()">
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">add</mat-icon>
+                <span>Add batch</span>
+              </button>
+            </div>
+          </mat-dialog-content>
+
+          <mat-dialog-actions align="end">
+            <button type="button" class="btn-outline" (click)="close()">Cancel</button>
+            <button type="button" class="btn-primary" (click)="confirm()" [disabled]="saving || imageUploading">Save</button>
+          </mat-dialog-actions>

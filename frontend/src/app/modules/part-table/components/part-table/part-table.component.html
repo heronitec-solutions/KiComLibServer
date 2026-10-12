@@ -1,0 +1,199 @@
+<app-header
+  icon="inventory_2"
+  pageTitle="Parts"
+  subtitle="Manage electronic components, symbols, and footprints"
+  >
+  <button type="button" class="btn-outline" (click)="exportCsv()">
+    <mat-icon class="icon-16" fontSet="material-icons-outlined">download</mat-icon>
+    <span>Export</span>
+  </button>
+  @if (auth.canWrite()) {
+    <button type="button" class="btn-primary" (click)="addEntry()">
+      <mat-icon class="icon-16" fontSet="material-icons-outlined">add</mat-icon>
+      <span>Add Component</span>
+    </button>
+  }
+</app-header>
+
+<div class="page-container">
+  <!-- Search and filters -->
+  <div class="surface-panel mb-6 p-6">
+    <div class="mb-4 flex items-center gap-2">
+      <mat-icon class="icon-20 text-gray-400" fontSet="material-icons-outlined">filter_list</mat-icon>
+      <h3 class="panel-title">Search &amp; Filter</h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div class="relative">
+        <mat-icon
+          class="icon-16 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          fontSet="material-icons-outlined"
+        >search</mat-icon>
+        <input
+          type="text"
+          class="input-dark pl-10"
+          placeholder="Search name, value, MPN, or order number..."
+          [ngModel]="filter.search"
+          (ngModelChange)="onSearchChange($event)"
+          />
+        </div>
+
+        <select class="input-dark" [ngModel]="filter.libraryId" (ngModelChange)="onLibraryChange($event)">
+          <option [ngValue]="'all'">All Libraries</option>
+          @for (library of libraryList; track library) {
+            <option [ngValue]="library.id">{{ library.name }}</option>
+          }
+        </select>
+
+        <select class="input-dark" [ngModel]="filter.manufacturerId" (ngModelChange)="onManufacturerChange($event)">
+          <option [ngValue]="'all'">All Manufacturers</option>
+          @for (manufacturer of manufacturerOptions; track manufacturer) {
+            <option [ngValue]="manufacturer.id">{{ manufacturer.name }}</option>
+          }
+        </select>
+
+        <select class="input-dark" [ngModel]="filter.status" (ngModelChange)="onStatusChange($event)">
+          <option value="all">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="nrnd">NRND</option>
+          <option value="ltb">LTB</option>
+          <option value="eol">EoL</option>
+        </select>
+
+        @if (hasActiveFilters) {
+          <button type="button" class="btn-outline" (click)="clearFilters()">
+            <mat-icon class="icon-16" fontSet="material-icons-outlined">close</mat-icon>
+            <span>Clear Filters</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Parts table -->
+    <div class="surface-panel overflow-hidden">
+      <table
+        mat-table
+        matSort
+        matSortActive="id"
+        matSortDirection="asc"
+        matSortDisableClear
+        [dataSource]="dataSource"
+        (matSortChange)="sortData($event)"
+        >
+        <!-- ID Column -->
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="tiny_column"> ID </th>
+          <td mat-cell *matCellDef="let row" class="tiny_column"> {{row.id}} </td>
+        </ng-container>
+
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> Name </th>
+          <td mat-cell *matCellDef="let row"> {{row.name}} </td>
+        </ng-container>
+
+        <!-- Value Column -->
+        <ng-container matColumnDef="value">
+          <th mat-header-cell *matHeaderCellDef> Value </th>
+          <td mat-cell *matCellDef="let row" class="mono-cell"> {{row.value}} </td>
+        </ng-container>
+
+        <!-- Comment Column -->
+        <ng-container matColumnDef="comment">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> Comment </th>
+          <td mat-cell *matCellDef="let row"> {{row.comment}} </td>
+        </ng-container>
+
+        <!-- Status Column -->
+        <ng-container matColumnDef="lifecycleStatus">
+          <th mat-header-cell *matHeaderCellDef> Status </th>
+          <td mat-cell *matCellDef="let row">
+            <span class="badge" [ngClass]="lifecycleBadgeClass(row.lifecycleStatus)">
+              {{ lifecycleLabel(row.lifecycleStatus) }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="actions_column"> Actions </th>
+          <td mat-cell *matCellDef="let row" class="actions_column">
+            <div class="flex space-x-1">
+              <button
+                type="button"
+                class="btn-icon text-blue-400 hover:text-blue-300"
+                aria-label="Revision history"
+                (click)="openHistory(row, $event)"
+                >
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">history</mat-icon>
+              </button>
+              <button
+                type="button"
+                class="btn-icon text-blue-400 hover:text-blue-300"
+                aria-label="View part"
+                (click)="viewRow(row)"
+                >
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">visibility</mat-icon>
+              </button>
+              @if (auth.canWrite()) {
+                <button
+                  type="button"
+                  class="btn-icon text-yellow-400 hover:text-yellow-300"
+                  aria-label="Edit part"
+                  (click)="editRow(row)"
+                  >
+                  <mat-icon class="icon-16" fontSet="material-icons-outlined">edit</mat-icon>
+                </button>
+              }
+              @if (auth.canWrite()) {
+                <button
+                  type="button"
+                  class="btn-icon text-red-400 hover:text-red-300"
+                  aria-label="Delete part"
+                  (click)="deleteRow(row)"
+                  >
+                  <mat-icon class="icon-16" fontSet="material-icons-outlined">delete_forever</mat-icon>
+                </button>
+              }
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: displayedColumns;"
+          class="cursor-pointer"
+          tabindex="0"
+          (click)="onRowClick(row, $event)"
+          (keydown.enter)="onRowClick(row, $event)"
+        ></tr>
+      </table>
+
+      <mat-paginator
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        [pageSize]="25"
+        showFirstLastButtons
+        aria-label="Select page of parts"
+      ></mat-paginator>
+    </div>
+
+    <!-- Empty state -->
+    @if ((dataSource.filteredCount$ | async) === 0) {
+      <div class="surface-panel mt-6 py-12 text-center">
+        <mat-icon class="icon-48 mx-auto mb-4 text-gray-600" fontSet="material-icons-outlined">inventory_2</mat-icon>
+        <h3 class="mb-2 text-lg font-medium text-white">No parts found</h3>
+        <p class="mb-6 text-gray-400">
+          {{ hasActiveFilters
+          ? 'Try adjusting your search or filters'
+          : 'Get started by adding your first component' }}
+        </p>
+        @if (auth.canWrite()) {
+          <button type="button" class="btn-primary" (click)="addEntry()">
+            <mat-icon class="icon-16" fontSet="material-icons-outlined">add</mat-icon>
+            <span>Add Component</span>
+          </button>
+        }
+      </div>
+    }
+  </div>

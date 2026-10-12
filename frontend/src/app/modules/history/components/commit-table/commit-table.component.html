@@ -1,0 +1,58 @@
+<app-header
+  icon="history"
+  pageTitle="History"
+  subtitle="Server-wide commits across library files, parts, manufacturers, and distributors"
+></app-header>
+
+<div class="page-container">
+  <div class="surface-panel overflow-hidden">
+    <table mat-table [dataSource]="dataSource">
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef class="tiny_column"> ID </th>
+        <td mat-cell *matCellDef="let row" class="tiny_column"> {{row.id}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="message">
+        <th mat-header-cell *matHeaderCellDef> Message </th>
+        <td mat-cell *matCellDef="let row"> {{row.message}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="author">
+        <th mat-header-cell *matHeaderCellDef> Author </th>
+        <td mat-cell *matCellDef="let row"> {{row.author}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="client">
+        <th mat-header-cell *matHeaderCellDef> Client </th>
+        <td mat-cell *matCellDef="let row" class="mono-cell"> {{row.client || '—'}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="createdAt">
+        <th mat-header-cell *matHeaderCellDef> Created </th>
+        <td mat-cell *matCellDef="let row" class="mono-cell"> {{row.createdAt | date:'medium'}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="changeCount">
+        <th mat-header-cell *matHeaderCellDef> Changes </th>
+        <td mat-cell *matCellDef="let row">
+          <span class="badge badge-muted">{{row.changeCount}}</span>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr
+        mat-row
+        *matRowDef="let row; columns: displayedColumns;"
+        class="cursor-pointer"
+        (click)="openCommit(row)"
+      ></tr>
+    </table>
+
+    <mat-paginator
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      [pageSize]="25"
+      showFirstLastButtons
+      aria-label="Select page of commits"
+    ></mat-paginator>
+  </div>
+</div>

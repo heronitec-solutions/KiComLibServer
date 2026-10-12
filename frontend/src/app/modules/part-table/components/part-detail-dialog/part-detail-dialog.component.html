@@ -1,0 +1,311 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>{{ part?.name || 'Part' }}</h1>
+  <div class="spacer"></div>
+  @if (part) {
+    <span class="badge mr-2" [ngClass]="lifecycleBadgeClass(part.lifecycleStatus)">
+      {{ lifecycleLabel(part.lifecycleStatus) }}
+    </span>
+  }
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <mat-tab-group>
+    <!-- Overview -->
+    <mat-tab label="Overview">
+      <div class="grid grid-cols-1 gap-4 pt-4 lg:grid-cols-2">
+        <div class="space-y-4">
+          <section class="dialog-section mb-0">
+            <h3 class="panel-title mb-3">Basic Information</h3>
+            <dl class="space-y-2 text-sm">
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-400">Value</dt>
+                <dd class="m-0 font-mono text-white">{{ part?.value || '—' }}</dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-400">Library</dt>
+                <dd class="m-0 text-white">{{ libraryName }}</dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-400">Symbol</dt>
+                <dd class="m-0 text-white">{{ symbolName || '—' }}</dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-400">Footprint</dt>
+                <dd class="m-0 text-white">{{ footprintName || '—' }}</dd>
+              </div>
+              @if (part?.keywords) {
+                <div class="flex justify-between gap-4">
+                  <dt class="text-gray-400">Keywords</dt>
+                  <dd class="m-0 text-white">{{ part?.keywords }}</dd>
+                </div>
+              }
+            </dl>
+          </section>
+
+          <section class="dialog-section mb-0">
+            <h3 class="panel-title mb-3">Comment</h3>
+            <p class="m-0 text-gray-300">{{ part?.comment || 'No comment recorded for this part.' }}</p>
+          </section>
+
+          @if (part?.imageHash) {
+            <section class="dialog-section mb-0">
+              <h3 class="panel-title mb-3">Product image</h3>
+              <product-image class="detail" [fetchUrl]="productImageUrl" [alt]="part?.name || 'Product image'"></product-image>
+            </section>
+          }
+
+          @if (datasheets.length || partLinks.length) {
+            <section class="dialog-section mb-0">
+              <h3 class="panel-title mb-3">Resources</h3>
+              @if (datasheets.length) {
+                <ul class="m-0 list-none space-y-2 p-0">
+                  @for (sheet of datasheets; track sheet) {
+                    <li class="flex flex-wrap items-center gap-x-4 gap-y-1">
+                      <a
+                        [href]="datasheetOpenUrl(sheet)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1 font-mono text-sm text-blue-400 hover:text-blue-300"
+                        >
+                        <mat-icon class="icon-16" fontSet="material-icons-outlined">description</mat-icon>
+                        <span>{{ sheet.filename }}</span>
+                        <mat-icon class="icon-16" fontSet="material-icons-outlined">open_in_new</mat-icon>
+                      </a>
+                      <a
+                        [href]="datasheetDownloadUrl(sheet)"
+                        class="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
+                        [attr.aria-label]="'Download ' + sheet.filename"
+                        >
+                        <mat-icon class="icon-16" fontSet="material-icons-outlined">download</mat-icon>
+                        <span>Download</span>
+                      </a>
+                    </li>
+                  }
+                </ul>
+              }
+              @if (partLinks.length) {
+                <ul class="m-0 list-none space-y-2 p-0" [class.mt-3]="datasheets.length">
+                  @for (link of partLinks; track link) {
+                    <li>
+                      <a
+                        [href]="link.url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
+                        >
+                        <mat-icon class="icon-16" fontSet="material-icons-outlined">link</mat-icon>
+                        <span>{{ link.label || link.url }}</span>
+                        <mat-icon class="icon-16" fontSet="material-icons-outlined">open_in_new</mat-icon>
+                      </a>
+                    </li>
+                  }
+                </ul>
+              }
+            </section>
+          }
+        </div>
+
+        <div class="space-y-4">
+          <section class="dialog-section mb-0">
+            <h3 class="panel-title mb-3 flex items-center gap-2">
+              <mat-icon class="icon-20 text-orange-400" fontSet="material-icons-outlined">bolt</mat-icon>
+              Schematic Symbol
+            </h3>
+            <div class="preview-canvas preview-canvas-symbol">
+              @if (part?.symbolId) {
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  [innerHTML]="symbolPreview"
+                  [attr.viewBox]="symbolPreviewViewBox"
+                ></svg>
+              } @else {
+                @if (part) {
+                  <p class="m-0 text-sm text-gray-500">No symbol assigned</p>
+                }
+              }
+            </div>
+          </section>
+
+          <section class="dialog-section mb-0">
+            <h3 class="panel-title mb-3 flex items-center gap-2">
+              <mat-icon class="icon-20 text-green-400" fontSet="material-icons-outlined">memory</mat-icon>
+              Footprint
+            </h3>
+            <div class="preview-canvas preview-canvas-footprint">
+              @if (part?.footprintId) {
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  [innerHTML]="footprintPreview"
+                  [attr.viewBox]="footprintPreviewViewBox"
+                ></svg>
+              } @else {
+                @if (part) {
+                  <p class="m-0 text-sm text-gray-500">No footprint assigned</p>
+                }
+              }
+            </div>
+          </section>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Part & order numbers -->
+    <mat-tab label="Part &amp; Order Numbers">
+      <div class="pt-4">
+        <div class="surface-panel overflow-hidden">
+          <div class="border-b border-gray-800 p-4">
+            <h3 class="panel-title">Distributor Information</h3>
+            <p class="m-0 text-sm text-gray-400">Manufacturer part numbers and distributor order numbers</p>
+          </div>
+
+          <table mat-table [dataSource]="orderRows">
+            <ng-container matColumnDef="manufacturer">
+              <th mat-header-cell *matHeaderCellDef> Manufacturer </th>
+              <td mat-cell *matCellDef="let row"> {{row.manufacturer}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="manufacturerPartNumber">
+              <th mat-header-cell *matHeaderCellDef> MPN </th>
+              <td mat-cell *matCellDef="let row" class="mono-cell"> {{row.manufacturerPartNumber}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="distributor">
+              <th mat-header-cell *matHeaderCellDef> Distributor </th>
+              <td mat-cell *matCellDef="let row">
+                @if (row.distributorUrl) {
+                  <a
+                    [href]="row.distributorUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300"
+                    >
+                    <span>{{row.distributor}}</span>
+                    <mat-icon class="icon-16" fontSet="material-icons-outlined">open_in_new</mat-icon>
+                  </a>
+                } @else {
+                  {{row.distributor}}
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="orderNumber">
+              <th mat-header-cell *matHeaderCellDef> Order Number </th>
+              <td mat-cell *matCellDef="let row" class="mono-cell"> {{row.orderNumber}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="quantityMin">
+              <th mat-header-cell *matHeaderCellDef> Min Qty </th>
+              <td mat-cell *matCellDef="let row"> {{row.quantityMin || '—'}} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="quantitySteps">
+              <th mat-header-cell *matHeaderCellDef> Steps </th>
+              <td mat-cell *matCellDef="let row"> {{row.quantitySteps || '—'}} </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="orderColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: orderColumns;"></tr>
+          </table>
+
+          @if (!isLoadingOrders && !orderRows.length) {
+            <div class="py-10 text-center">
+              <mat-icon class="icon-48 mx-auto mb-3 text-gray-600" fontSet="material-icons-outlined">shopping_cart</mat-icon>
+              <p class="m-0 text-gray-400">No part or order numbers recorded for this part.</p>
+            </div>
+          }
+        </div>
+      </div>
+    </mat-tab>
+
+    <mat-tab label="Alternatives">
+      <div class="pt-4">
+        <div class="surface-panel overflow-x-auto p-4">
+          @if (auth.canWrite()) {
+            <div class="mb-4">
+              <button type="button" class="btn-primary" (click)="createAlternative()" [disabled]="!part">
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">add</mat-icon>
+                <span>Create Alternative Based on This Part</span>
+              </button>
+            </div>
+          }
+
+          <table mat-table [dataSource]="selectedAlternatives" class="w-full">
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef> Name </th>
+              <td mat-cell *matCellDef="let row"> {{ row.name }} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="value">
+              <th mat-header-cell *matHeaderCellDef> Value </th>
+              <td mat-cell *matCellDef="let row"> {{ row.value || '—' }} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="comment">
+              <th mat-header-cell *matHeaderCellDef> Comment </th>
+              <td mat-cell *matCellDef="let row"> {{ row.comment || '—' }} </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="alternativeColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: alternativeColumns;"></tr>
+          </table>
+
+          @if (!selectedAlternatives.length) {
+            <div class="py-10 text-center">
+              <mat-icon class="icon-48 mx-auto mb-3 text-gray-600" fontSet="material-icons-outlined">swap_horiz</mat-icon>
+              <p class="m-0 text-gray-400">No alternative parts recorded for this part.</p>
+            </div>
+          }
+        </div>
+      </div>
+    </mat-tab>
+
+    @if (signedIn) {
+      <mat-tab label="Used in">
+        <div class="pt-4">
+          @if (usageError) {
+            <p class="text-sm text-red-400">{{ usageError }}</p>
+          }
+          @if (usageLoading) {
+            <p class="text-sm text-gray-400">Loading projects…</p>
+          }
+          <div class="surface-panel overflow-hidden">
+            <table mat-table [dataSource]="usages">
+              <ng-container matColumnDef="project">
+                <th mat-header-cell *matHeaderCellDef> Project </th>
+                <td mat-cell *matCellDef="let row">
+                  <button type="button" class="text-blue-400 hover:text-blue-300" (click)="openProject(row)">{{ row.projectName }}</button>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="revision">
+                <th mat-header-cell *matHeaderCellDef> Revision / release </th>
+                <td mat-cell *matCellDef="let row" class="mono-cell">{{ whereUsed(row) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="quantity">
+                <th mat-header-cell *matHeaderCellDef> Quantity </th>
+                <td mat-cell *matCellDef="let row" class="mono-cell">{{ row.quantity }}</td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="usageColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: usageColumns;"></tr>
+            </table>
+            @if (!usageLoading && !usages.length) {
+              <p class="p-6 text-sm text-gray-400">This part is not used in a project you can read.</p>
+            }
+          </div>
+        </div>
+      </mat-tab>
+    }
+  </mat-tab-group>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button type="button" class="btn-outline" (click)="close()">Close</button>
+  @if (auth.canWrite()) {
+    <button type="button" class="btn-primary" (click)="edit()" [disabled]="!part">
+      <mat-icon class="icon-16" fontSet="material-icons-outlined">edit</mat-icon>
+      <span>Edit</span>
+    </button>
+  }
+</mat-dialog-actions>

@@ -1,0 +1,128 @@
+<app-header
+  icon="storage"
+  pageTitle="Library Files"
+  subtitle="Symbol and footprint library source files"
+></app-header>
+
+<div class="page-container">
+  <div class="surface-panel mb-6 p-6">
+    <div class="mb-4 flex items-center gap-2">
+      <mat-icon class="icon-20 text-gray-400" fontSet="material-icons-outlined">filter_list</mat-icon>
+      <h3 class="panel-title">Search &amp; Filter</h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div class="relative">
+        <mat-icon
+          class="icon-16 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          fontSet="material-icons-outlined"
+        >search</mat-icon>
+        <input
+          type="text"
+          class="input-dark pl-10"
+          placeholder="Search library files..."
+          [ngModel]="filter.search"
+          (ngModelChange)="onSearchChange($event)"
+          />
+        </div>
+
+        <select class="input-dark" [ngModel]="filter.kind" (ngModelChange)="onKindChange($event)">
+          <option [ngValue]="'all'">All types</option>
+          <option [ngValue]="'symbol'">Symbol</option>
+          <option [ngValue]="'footprint'">Footprint</option>
+        </select>
+
+        @if (hasActiveFilters) {
+          <button type="button" class="btn-outline" (click)="clearFilters()">
+            <mat-icon class="icon-16" fontSet="material-icons-outlined">close</mat-icon>
+            <span>Clear Filters</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="surface-panel overflow-x-auto">
+      <table
+        mat-table
+        matSort
+        matSortActive="id"
+        matSortDirection="asc"
+        matSortDisableClear
+        [dataSource]="dataSource"
+        (matSortChange)="sortData($event)"
+        >
+        <!-- ID Column -->
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="tiny_column"> ID </th>
+          <td mat-cell *matCellDef="let row" class="tiny_column"> {{row.id}} </td>
+        </ng-container>
+
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> Name </th>
+          <td mat-cell *matCellDef="let row"> {{row.name}} </td>
+        </ng-container>
+
+        <!-- Type Column -->
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> Type </th>
+          <td mat-cell *matCellDef="let row">
+            <span class="badge badge-muted">
+              {{ row.type === 0 ? 'Footprint' : row.type === 1 ? 'Symbol' : 'Unknown' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Comment Column -->
+        <ng-container matColumnDef="comment">
+          <th mat-header-cell *matHeaderCellDef> Comment </th>
+          <td mat-cell *matCellDef="let row"> {{row.comment}} </td>
+        </ng-container>
+
+        <!-- Filename Column -->
+        <ng-container matColumnDef="filename">
+          <th mat-header-cell *matHeaderCellDef> Filename </th>
+          <td mat-cell *matCellDef="let row" class="mono-cell"> {{row.filename}} </td>
+        </ng-container>
+
+        <!-- Description Column -->
+        <ng-container matColumnDef="description">
+          <th mat-header-cell *matHeaderCellDef> Description </th>
+          <td mat-cell *matCellDef="let row"> {{row.description}} </td>
+        </ng-container>
+
+        <!-- Version Column -->
+        <ng-container matColumnDef="version">
+          <th mat-header-cell *matHeaderCellDef> Version </th>
+          <td mat-cell *matCellDef="let row" class="mono-cell"> {{row.version}} </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: displayedColumns;"
+          class="cursor-pointer"
+          tabindex="0"
+          (click)="onRowClick(row, $event)"
+          (keydown.enter)="onRowClick(row, $event)"
+        ></tr>
+      </table>
+
+      <mat-paginator
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        [pageSize]="25"
+        showFirstLastButtons
+        aria-label="Select page of library files"
+      ></mat-paginator>
+    </div>
+
+    @if ((dataSource.filteredCount$ | async) === 0 && (dataSource.isLoading$ | async) === false) {
+      <div class="surface-panel mt-6 py-12 text-center">
+        <mat-icon class="icon-48 mx-auto mb-4 text-gray-600" fontSet="material-icons-outlined">storage</mat-icon>
+        <h3 class="mb-2 text-lg font-medium text-white">No library files found</h3>
+        <p class="m-0 text-gray-400">
+          {{ hasActiveFilters ? 'Try adjusting your search or filters' : 'Library files show up here after a library import.' }}
+        </p>
+      </div>
+    }
+  </div>

@@ -1,0 +1,125 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>{{ footprint?.name || 'Footprint' }}</h1>
+  <div class="spacer"></div>
+  @if (footprint?.revisionNo != null) {
+    <span class="badge badge-muted mr-2">r{{ footprint?.revisionNo }}</span>
+  }
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  @if (isLoading) {
+    <div class="py-6 text-gray-400">Loading footprint…</div>
+  }
+  @if (!isLoading && loadError) {
+    <div class="py-6 text-red-400">{{ loadError }}</div>
+  }
+
+  @if (!isLoading && footprint) {
+    <div class="grid grid-cols-1 gap-4 pt-2 lg:grid-cols-2">
+      <div class="space-y-4">
+        <section class="dialog-section mb-0">
+          <h3 class="panel-title mb-3">Metadata</h3>
+          <dl class="space-y-2 text-sm">
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-400">Library File</dt>
+              <dd class="m-0 mono-cell">{{ footprint.libraryFileId }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-400">Layer</dt>
+              <dd class="m-0 mono-cell">{{ footprint.layer }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-400">Tags</dt>
+              <dd class="m-0 text-white">{{ footprint.tags || '—' }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-400">Hash</dt>
+              <dd class="m-0 mono-cell break-all">{{ (footprint.hash || footprint.fileHash || '—') | slice:0:12 }}…</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-400">Board Only</dt>
+              <dd class="m-0">
+                <span class="badge" [ngClass]="footprint.boardOnly ? 'badge-success' : 'badge-muted'">
+                  {{ footprint.boardOnly ? 'Yes' : 'No' }}
+                </span>
+              </dd>
+            </div>
+          </dl>
+        </section>
+        <section class="dialog-section mb-0">
+          <h3 class="panel-title mb-3">Description</h3>
+          <p class="m-0 text-gray-300">{{ footprint.description || 'No description.' }}</p>
+        </section>
+      </div>
+      <section class="dialog-section mb-0">
+        <h3 class="panel-title mb-3 flex items-center gap-2">
+          <mat-icon class="icon-20 text-green-400" fontSet="material-icons-outlined">memory</mat-icon>
+          Preview
+        </h3>
+        <div class="preview-canvas preview-canvas-footprint">
+          @if (preview) {
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              [innerHTML]="preview"
+              [attr.viewBox]="previewViewBox"
+            ></svg>
+          } @else {
+            <p class="m-0 text-sm text-gray-500">No preview available</p>
+          }
+        </div>
+      </section>
+    </div>
+  }
+
+  @if (!isLoading && footprint) {
+    <section class="dialog-section mt-4 mb-0">
+      <h3 class="panel-title mb-3">3D Models</h3>
+      <div class="surface-panel overflow-x-auto">
+        <table mat-table [dataSource]="models">
+          <ng-container matColumnDef="position">
+            <th mat-header-cell *matHeaderCellDef> Pos </th>
+            <td mat-cell *matCellDef="let row" class="mono-cell"> {{ row.position }} </td>
+          </ng-container>
+          <ng-container matColumnDef="file">
+            <th mat-header-cell *matHeaderCellDef> File </th>
+            <td mat-cell *matCellDef="let row" class="mono-cell"> {{ modelPath(row) }} </td>
+          </ng-container>
+          <ng-container matColumnDef="offset">
+            <th mat-header-cell *matHeaderCellDef> Offset </th>
+            <td mat-cell *matCellDef="let row" class="mono-cell"> {{ formatVec(row.offset) }} </td>
+          </ng-container>
+          <ng-container matColumnDef="scale">
+            <th mat-header-cell *matHeaderCellDef> Scale </th>
+            <td mat-cell *matCellDef="let row" class="mono-cell"> {{ formatVec(row.scale) }} </td>
+          </ng-container>
+          <ng-container matColumnDef="rotate">
+            <th mat-header-cell *matHeaderCellDef> Rotate </th>
+            <td mat-cell *matCellDef="let row" class="mono-cell"> {{ formatVec(row.rotate) }} </td>
+          </ng-container>
+          <ng-container matColumnDef="hide">
+            <th mat-header-cell *matHeaderCellDef> Hide </th>
+            <td mat-cell *matCellDef="let row">
+              <span class="badge" [ngClass]="row.hide ? 'badge-destructive' : 'badge-muted'">
+                {{ row.hide ? 'Yes' : 'No' }}
+              </span>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="modelColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: modelColumns;"></tr>
+        </table>
+        @if (!models.length) {
+          <div class="py-8 text-center text-gray-400">
+            No 3D models linked to this footprint.
+          </div>
+        }
+      </div>
+    </section>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button type="button" class="btn-outline" (click)="close()">Close</button>
+</mat-dialog-actions>

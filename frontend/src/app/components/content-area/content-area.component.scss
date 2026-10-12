@@ -1,0 +1,7 @@
+// Pass the available height down so pages can centre content vertically.
+:host {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 100%;
+}

@@ -1,0 +1,108 @@
+<app-header
+  icon="developer_board"
+  pageTitle="Projects"
+  subtitle="KiCad designs mirrored from Git"
+  >
+</app-header>
+
+<div class="page-container">
+  @if (error) {
+    <p class="surface-panel mb-6 p-4 text-red-400">{{ error }}</p>
+  }
+
+  <div class="surface-panel mb-6 p-6">
+    <div class="mb-4 flex items-center gap-2">
+      <mat-icon class="icon-20 text-gray-400" fontSet="material-icons-outlined">filter_list</mat-icon>
+      <h3 class="panel-title">Search &amp; Filter</h3>
+    </div>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div class="relative">
+        <mat-icon
+          class="icon-16 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          fontSet="material-icons-outlined"
+        >search</mat-icon>
+        <input
+          type="text"
+          class="input-dark pl-10"
+          placeholder="Search projects..."
+          [ngModel]="query"
+          (ngModelChange)="onQuery($event)"
+          />
+        </div>
+        <select class="input-dark" [ngModel]="status" (ngModelChange)="onStatus($event)">
+          <option value="all">All statuses</option>
+          <option value="development">In development</option>
+          <option value="released">Released</option>
+          <option value="obsolete">Obsolete</option>
+        </select>
+        @if (hasActiveFilters) {
+          <button type="button" class="btn-outline" (click)="clearFilters()">
+            <mat-icon class="icon-16" fontSet="material-icons-outlined">close</mat-icon>
+            <span>Clear Filters</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="surface-panel overflow-hidden">
+      <table mat-table [dataSource]="dataSource">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef> Name </th>
+          <td mat-cell *matCellDef="let row">
+            <button type="button" class="text-left text-white hover:text-blue-300" (click)="open(row)">{{ row.name }}</button>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef> Status </th>
+          <td mat-cell *matCellDef="let row">
+            <span class="badge" [ngClass]="statusClass(row.status)">{{ statusLabel(row.status) }}</span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="customer">
+          <th mat-header-cell *matHeaderCellDef> Customer </th>
+          <td mat-cell *matCellDef="let row">{{ row.customer || '—' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="owner">
+          <th mat-header-cell *matHeaderCellDef> Owner </th>
+          <td mat-cell *matCellDef="let row">{{ row.ownerName || '—' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="revisions">
+          <th mat-header-cell *matHeaderCellDef> Revisions </th>
+          <td mat-cell *matCellDef="let row">{{ row.revisionCount }}</td>
+        </ng-container>
+        <ng-container matColumnDef="components">
+          <th mat-header-cell *matHeaderCellDef> Components </th>
+          <td mat-cell *matCellDef="let row">{{ row.headComponentCount }}</td>
+        </ng-container>
+        <ng-container matColumnDef="warnings">
+          <th mat-header-cell *matHeaderCellDef> Warnings </th>
+          <td mat-cell *matCellDef="let row">{{ row.warningCount }}</td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: displayedColumns;"
+          class="cursor-pointer"
+          tabindex="0"
+          (click)="onRowClick(row, $event)"
+          (keydown.enter)="onRowClick(row, $event)"
+        ></tr>
+      </table>
+      <mat-paginator
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        [pageSize]="25"
+        showFirstLastButtons
+        aria-label="Select page of projects"
+      ></mat-paginator>
+    </div>
+
+    @if ((dataSource.filteredCount$ | async) === 0 && (dataSource.isLoading$ | async) === false) {
+      <div class="surface-panel mt-6 py-12 text-center">
+        <mat-icon class="icon-48 mx-auto mb-4 text-gray-600" fontSet="material-icons-outlined">developer_board</mat-icon>
+        <h3 class="mb-2 text-lg font-medium text-white">No projects found</h3>
+        <p class="m-0 text-gray-400">
+          {{ hasActiveFilters ? 'Try adjusting your search or filters.' : 'Import a KiCad project from Git Integration.' }}
+        </p>
+      </div>
+    }
+  </div>

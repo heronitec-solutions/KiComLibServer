@@ -1,0 +1,80 @@
+<div class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+  <label class="flex flex-col gap-1 text-sm text-gray-300">
+    Base
+    <select class="input-dark" [(ngModel)]="baseSha">
+      <option value="">Select a revision</option>
+      @for (revision of revisions; track revision) {
+        <option [value]="revision.commitSha">
+          {{ revisionLabel(revision) }}
+        </option>
+      }
+    </select>
+  </label>
+  <label class="flex flex-col gap-1 text-sm text-gray-300">
+    Target
+    <select class="input-dark" [(ngModel)]="targetSha">
+      <option value="">Select a revision</option>
+      @for (revision of revisions; track revision) {
+        <option [value]="revision.commitSha">
+          {{ revisionLabel(revision) }}
+        </option>
+      }
+    </select>
+  </label>
+  <div class="flex items-end gap-2">
+    <button type="button" class="btn-primary" (click)="load()">Compare</button>
+    @if (baseSha && targetSha) {
+      <a
+        class="btn-outline"
+        [routerLink]="['/projects', projectId, 'diff']"
+        [queryParams]="{ base: baseSha, target: targetSha }"
+      >Visual diff</a>
+    }
+  </div>
+</div>
+
+@if (error) {
+  <p class="mb-4 text-sm text-red-400">{{ error }}</p>
+}
+@if (loading) {
+  <p class="mb-4 text-sm text-gray-400">Comparing revisions…</p>
+}
+
+@if (diff) {
+  <div class="space-y-4">
+    <p class="text-sm text-gray-400">
+      Added {{ diff.summary.added }}, removed {{ diff.summary.removed }}, replaced {{ diff.summary.replaced }},
+      changed {{ diff.summary.changed }}, renamed {{ diff.summary.renamed }}.
+    </p>
+    @for (group of groups; track group) {
+      <section class="surface-panel p-4">
+        <h3 class="panel-title mb-3">{{ groupLabel(group) }}</h3>
+        @if (!items(group).length) {
+          <p class="m-0 text-sm text-gray-400">None.</p>
+        }
+        <ul class="m-0 list-none space-y-2 p-0">
+          @for (item of items(group); track item) {
+            <li class="text-sm text-gray-200">
+              <span class="font-mono text-white">{{ item.reference }}</span>
+              @if (item.value) {
+                <span> {{ item.value }}</span>
+              }
+              @if (item.fromValue || item.toValue) {
+                <span> {{ item.fromValue }} → {{ item.toValue }}</span>
+              }
+              @if (item.status) {
+                <span class="badge bom-status ml-2" [ngClass]="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
+              }
+              @if (item.toStatus) {
+                <span class="badge bom-status ml-2" [ngClass]="statusClass(item.toStatus)">{{ statusLabel(item.toStatus) }}</span>
+              }
+              @if (changeText(item)) {
+                <span class="mt-1 block text-gray-400">{{ changeText(item) }}</span>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+}

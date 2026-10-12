@@ -1,0 +1,66 @@
+# Docker Compose file for running KiComLib Server.
+
+services:
+  db:
+    image: docker.io/library/postgres:18
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    volumes:
+      - ./postgresql:/var/lib/postgresql
+    environment:
+      POSTGRES_DB: kicomlib
+      POSTGRES_USER: dbuser
+      POSTGRES_PASSWORD: ${KICOMLIB_DB_PASSWORD:?KICOMLIB_DB_PASSWORD is required}
+      
+      
+  kicomlib:
+    image: docker.io/heronitecsolutions/kicomlib-server:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: kicomlib
+      DB_USER: dbuser
+      DB_PASSWORD: ${KICOMLIB_DB_PASSWORD:?KICOMLIB_DB_PASSWORD is required}
+      DB_AUTO_INIT: "true"
+      DB_STARTUP_TIMEOUT_SECONDS: "120"
+      BLOB_MAX_SIZE_MB: "200"
+      PUBLIC_BASE_URL: "https://kicomlib.example.com"
+      KICAD_RUNNER_URL: "http://kicad-runner:8080"
+      KICAD_RUNNER_TOKEN: ${KICAD_RUNNER_TOKEN:?KICAD_RUNNER_TOKEN is required}
+    ports:
+      - "80:8080"
+    volumes:
+      - ./backups:/app/Data/Backups
+      - ./repos:/app/Data/Repos
+      - ./cache:/app/Data/ProjectCache
+      # Data Protection key ring. Back up this directory separately from the database.
+      - ./keys:/app/Data/Keys
+    networks: [default, runner]
+
+  kicad-runner:
+    image: docker.io/heronitecsolutions/kicomlib-kicad-runner:latest
+    restart: unless-stopped
+    environment:
+      RUNNER_TOKEN: ${KICAD_RUNNER_TOKEN:?KICAD_RUNNER_TOKEN is required}
+      RUNNER_MAX_PARALLEL: "4"
+    read_only: true
+    # mode 1777: the short tmpfs form mounts root-owned 0755, and the runner user cannot create files there.
+    tmpfs:
+      - /work:mode=1777
+      - /tmp:mode=1777
+    mem_limit: 8g
+    cpus: 4
+    networks: [runner]
+
+networks:
+  runner:
+    internal: true

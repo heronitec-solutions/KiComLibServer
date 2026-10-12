@@ -1,0 +1,74 @@
+<app-header
+  icon="inventory_2"
+  pageTitle="Component Library"
+  subtitle="Manage electronic components, symbols, and footprints"
+></app-header>
+
+<div class="page-container">
+  <div class="mb-10 flex flex-col items-center text-center">
+    <div class="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-blue-600">
+      <mat-icon class="icon-48 text-white" fontSet="material-icons-outlined">inventory_2</mat-icon>
+    </div>
+
+    <h2 class="mb-4 text-2xl font-bold text-white">Welcome to KiComLib Library</h2>
+    <p class="mb-8 max-w-md text-gray-400">
+      Browse and manage electronic components, symbols, footprints and their distributor data.
+    </p>
+
+    <a routerLink="/parts" class="btn-primary">
+      <mat-icon class="icon-16" fontSet="material-icons-outlined">arrow_forward</mat-icon>
+      <span>Browse Parts</span>
+    </a>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-4">
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="stat-label">Total Parts</p>
+          <p class="stat-value text-white">{{ totalParts }}</p>
+        </div>
+        <div class="icon-tile bg-blue-900/20">
+          <mat-icon class="icon-24 text-blue-400" fontSet="material-icons-outlined">inventory_2</mat-icon>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="stat-label">Active</p>
+          <p class="stat-value text-green-400">{{ activeParts }}</p>
+        </div>
+        <div class="icon-tile bg-green-900/20">
+          <mat-icon class="icon-24 text-green-400" fontSet="material-icons-outlined">check_circle</mat-icon>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="stat-label">Missing Symbol</p>
+          <p class="stat-value text-yellow-400">{{ partsWithoutSymbol }}</p>
+        </div>
+        <div class="icon-tile bg-yellow-900/20">
+          <mat-icon class="icon-24 text-yellow-400" fontSet="material-icons-outlined">bolt</mat-icon>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="stat-label">End of Life</p>
+          <p class="stat-value text-red-400">{{ endOfLifeParts }}</p>
+        </div>
+        <div class="icon-tile bg-red-900/20">
+          <mat-icon class="icon-24 text-red-400" fontSet="material-icons-outlined">cancel</mat-icon>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

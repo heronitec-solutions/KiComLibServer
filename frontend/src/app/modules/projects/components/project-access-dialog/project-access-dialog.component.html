@@ -1,0 +1,38 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>Project access</h1>
+  <div class="spacer"></div>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <p class="mb-4 text-sm text-gray-400">
+    A group that is listed here can read the project. Write access can change metadata and start analysis.
+  </p>
+  @if (!rows.length) {
+    <div class="text-sm text-gray-400">No groups are defined yet.</div>
+  }
+  <div class="space-y-3">
+    @for (row of rows; track row) {
+      <div class="flex flex-col gap-2 rounded-md border border-gray-800 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <span class="text-white">{{ row.group.name }}</span>
+        <div class="flex gap-4 text-sm text-gray-300">
+          <label class="flex items-center gap-2">
+            <input type="checkbox" [ngModel]="row.enabled" (ngModelChange)="onEnabled(row, $event)" />
+            <span>Read</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" [(ngModel)]="row.canWrite" [disabled]="!row.enabled" />
+            <span>Write</span>
+          </label>
+        </div>
+      </div>
+    }
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button type="button" class="btn-outline" (click)="close()">Cancel</button>
+  <button type="button" class="btn-primary" (click)="confirm()">Save</button>
+</mat-dialog-actions>

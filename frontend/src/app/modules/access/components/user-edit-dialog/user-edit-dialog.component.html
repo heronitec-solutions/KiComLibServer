@@ -1,0 +1,76 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>{{ data.user ? 'Edit User' : 'New User' }}</h1>
+  <div class="spacer"></div>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <div class="dialog-grid">
+    <mat-form-field appearance="fill">
+      <mat-label>Username</mat-label>
+      <input matInput [(ngModel)]="username" [disabled]="isDirectory" required />
+    </mat-form-field>
+
+    @if (!isDirectory) {
+      <mat-form-field appearance="fill">
+        <mat-label>{{ data.user ? 'New password' : 'Password' }}</mat-label>
+        <input matInput type="password" [(ngModel)]="password" [placeholder]="data.user ? 'Leave empty to keep' : ''" />
+      </mat-form-field>
+    }
+  </div>
+  @if (isInstalledDefault()) {
+    <p class="m-0 text-sm text-red-400">kicomlib is the installed default password and cannot be used.</p>
+  }
+
+  @if (isDirectory) {
+    <p class="m-0 text-sm text-gray-400">
+      This account signs in with the directory password. Its username comes from the directory.
+      Groups marked as directory membership are updated at each sign-in. Local groups stay as assigned here.
+    </p>
+  }
+
+  <div class="mt-2 flex flex-col gap-2 text-sm text-gray-300">
+    <label class="flex items-center gap-2">
+      <input type="checkbox" [(ngModel)]="isActive" />
+      <span>Active</span>
+    </label>
+  </div>
+
+  <div class="dialog-section mt-4">
+    <h3 class="dialog-section-title">Groups</h3>
+    <div class="flex flex-col gap-2 text-sm text-gray-300">
+      @for (group of data.groups; track group) {
+        <label class="flex items-center gap-2">
+          <input
+            type="checkbox"
+            [checked]="isSelected(group.id)"
+            [disabled]="isDirectoryMembership(group.id)"
+            (change)="toggleGroup(group.id, $any($event.target).checked)"
+            />
+            <span>{{ group.name }}</span>
+            <span class="text-gray-500">{{ groupRights(group) }}</span>
+            @if (isDirectoryMembership(group.id)) {
+              <span class="text-gray-500">from the directory</span>
+            }
+          </label>
+        }
+        @if (!data.groups.length) {
+          <p class="m-0 text-gray-400">No groups exist yet.</p>
+        }
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button type="button" class="btn-outline" (click)="close()">Cancel</button>
+    <button
+      type="button"
+      class="btn-primary"
+      (click)="confirm()"
+      [disabled]="!username.trim() || isInstalledDefault() || (!isDirectory && !data.user && password.trim().length < 12) || (!isDirectory && !!password && password.trim().length < 12)"
+      >
+      Save
+    </button>
+  </mat-dialog-actions>

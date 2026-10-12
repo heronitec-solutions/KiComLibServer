@@ -1,0 +1,552 @@
+@if (distributorBusy) {
+  <div class="distributor-busy" role="status" aria-live="polite">
+    <span class="busy-spinner" aria-hidden="true"></span>
+    <span>{{ distributorBusyText }}</span>
+  </div>
+}
+
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>
+    {{ dialogTitle }}
+  </h1>
+  <div class="spacer"></div>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <mat-tab-group [mat-stretch-tabs]="true" animationDuration="0ms">
+    <mat-tab label="Basic Information">
+      <div class="pt-4">
+        <section class="dialog-section">
+          <h2 class="dialog-section-title">
+            <mat-icon class="icon-16" fontSet="material-icons-outlined">info</mat-icon>
+            Basic Information
+          </h2>
+
+          <div class="dialog-grid">
+            <mat-form-field appearance="fill">
+              <mat-label>Name</mat-label>
+              <input matInput type="text" [(ngModel)]="part.name" required />
+            </mat-form-field>
+
+            <mat-form-field appearance="fill">
+              <mat-label>Value</mat-label>
+              <input matInput type="text" [(ngModel)]="part.value" required />
+            </mat-form-field>
+
+            <mat-form-field appearance="fill" class="dialog-grid-full">
+              <mat-label>Comment</mat-label>
+              <textarea matInput rows="3" [(ngModel)]="part.comment"></textarea>
+            </mat-form-field>
+          </div>
+
+          <div class="lookup-row">
+            <mat-form-field appearance="fill" class="lookup-api" subscriptSizing="dynamic">
+              <mat-label>API</mat-label>
+              <mat-select
+                [(ngModel)]="selectedLookupProvider"
+                name="lookupApi"
+                [disabled]="distributorBusy || !enabledLookupProviders.length"
+                >
+                @for (provider of enabledLookupProviders; track provider) {
+                  <mat-option [value]="provider.id">{{ provider.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="fill" class="lookup-query" subscriptSizing="dynamic">
+              <mat-label>Search term</mat-label>
+              <input
+                matInput
+                name="distributorLookup"
+                [ngModel]="lookupQuery"
+                (ngModelChange)="onLookupQueryInput($event)"
+                autocomplete="off"
+                />
+              </mat-form-field>
+              <button type="button" class="btn-primary shrink-0" (click)="lookupPart()" [disabled]="lookupDisabled" [attr.aria-busy]="lookingUp">
+                @if (lookingUp) {
+                  <span class="busy-spinner busy-spinner-sm busy-spinner-on-primary" aria-hidden="true"></span>
+                }
+                @if (!lookingUp) {
+                  <mat-icon class="icon-16" fontSet="material-icons-outlined">search</mat-icon>
+                }
+                <span>{{ lookingUp ? 'Searching…' : 'Look up' }}</span>
+              </button>
+            </div>
+            @if (lookupStatusText) {
+              <p class="m-0 mt-2 text-sm text-amber-400">{{ lookupStatusText }}</p>
+            }
+
+            <div class="mt-4 flex flex-wrap items-start gap-4">
+              <product-image [fetchUrl]="imagePreviewUrl" alt="Product image"></product-image>
+              <div class="flex min-w-0 flex-1 flex-col items-start gap-2">
+                <div class="flex flex-wrap gap-2">
+                  <input
+                    #imageInput
+                    type="file"
+                    class="hidden"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    (change)="onImageFile($event)"
+                    />
+                    <button type="button" class="btn-outline" (click)="imageInput.click()" [disabled]="imageUploading || distributorBusy">
+                      <span>{{ imageUploading ? 'Uploading…' : 'Upload image' }}</span>
+                    </button>
+                    <button type="button" class="btn-outline" (click)="clearImage()" [disabled]="!imagePreviewUrl || imageUploading">
+                      Remove
+                    </button>
+                  </div>
+                  <p class="m-0 text-sm text-gray-400">
+                    JPEG, PNG, GIF or WebP, up to 5 MB. DigiKey can include a photo, which you can choose when looking up a part.
+                  </p>
+                </div>
+              </div>
+
+              <mat-form-field appearance="fill">
+                <mat-label>Status</mat-label>
+                <mat-select [(ngModel)]="part.lifecycleStatus" name="lifecycleStatus">
+                  @for (option of lifecycleOptions; track option) {
+                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </section>
+
+            <section class="dialog-section">
+              <h2 class="dialog-section-title">
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">collections_bookmark</mat-icon>
+                Library
+              </h2>
+
+              <div class="dialog-grid">
+                <searchable-select
+                  class="dialog-grid-full"
+                  label="Library"
+                  [items]="libraryList"
+                  [value]="part.libraryId ?? null"
+                  (valueChange)="part.libraryId = $event ?? undefined"
+                ></searchable-select>
+
+              </div>
+
+              <div class="mt-4 space-y-3">
+                <h3 class="panel-title">Datasheets</h3>
+                <div class="flex flex-col gap-3 md:flex-row md:items-end">
+                  <searchable-select
+                    class="min-w-0 flex-1"
+                    label="Add datasheet"
+                    [items]="availableDatasheets"
+                    [labelFn]="datasheetLabel"
+                    [value]="datasheetToAdd"
+                    (valueChange)="datasheetToAdd = $event"
+                  ></searchable-select>
+                  <button type="button" class="btn-outline shrink-0" (click)="addDatasheet()" [disabled]="datasheetToAdd == null">
+                    Add
+                  </button>
+                </div>
+
+                @if (selectedDatasheets.length) {
+                  <table mat-table [dataSource]="selectedDatasheets" class="editor-table">
+                    <ng-container matColumnDef="filename">
+                      <th mat-header-cell *matHeaderCellDef> Filename </th>
+                      <td mat-cell *matCellDef="let row">
+                        <a
+                          class="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300"
+                          [href]="datasheetFileUrl(row)"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          >
+                          <span>{{ row.filename }}</span>
+                          <mat-icon class="icon-16" fontSet="material-icons-outlined">open_in_new</mat-icon>
+                        </a>
+                      </td>
+                    </ng-container>
+                    <ng-container matColumnDef="directory">
+                      <th mat-header-cell *matHeaderCellDef> Directory </th>
+                      <td mat-cell *matCellDef="let row" class="mono-cell"> {{ row.directory || '—' }} </td>
+                    </ng-container>
+                    <ng-container matColumnDef="actions">
+                      <th mat-header-cell *matHeaderCellDef class="datasheet-actions"></th>
+                      <td mat-cell *matCellDef="let row" class="datasheet-actions">
+                        <a
+                          class="btn-icon text-blue-400 hover:text-blue-300"
+                          [href]="datasheetFileUrl(row, true)"
+                          aria-label="Download datasheet"
+                          >
+                          <mat-icon class="icon-16" fontSet="material-icons-outlined">download</mat-icon>
+                        </a>
+                        <button type="button" class="btn-icon text-red-400 hover:text-red-300" aria-label="Remove datasheet" (click)="removeDatasheet(row.id)">
+                          <mat-icon class="icon-16" fontSet="material-icons-outlined">delete</mat-icon>
+                        </button>
+                      </td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="datasheetColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: datasheetColumns;"></tr>
+                  </table>
+                }
+
+                @if (!selectedDatasheets.length) {
+                  <p class="m-0 text-sm text-gray-400">No datasheets selected.</p>
+                }
+              </div>
+            </section>
+
+            <section class="dialog-section">
+              <h2 class="dialog-section-title">
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">link</mat-icon>
+                Links
+              </h2>
+              <p class="m-0 mb-3 text-sm text-gray-400">Pages related to this part, such as a development board.</p>
+
+              @for (link of links; track link; let i = $index) {
+                <div class="link-row">
+                  <mat-form-field appearance="fill" class="link-name" subscriptSizing="dynamic">
+                    <mat-label>Name</mat-label>
+                    <input matInput [(ngModel)]="link.label" [name]="'linkLabel' + i" />
+                  </mat-form-field>
+                  <mat-form-field appearance="fill" class="link-url" subscriptSizing="dynamic">
+                    <mat-label>Address</mat-label>
+                    <input matInput [(ngModel)]="link.url" [name]="'linkUrl' + i" placeholder="https://" />
+                  </mat-form-field>
+                  <button type="button" class="btn-icon text-red-400 hover:text-red-300" aria-label="Remove link" (click)="removeLink(i)">
+                    <mat-icon class="icon-16" fontSet="material-icons-outlined">delete</mat-icon>
+                  </button>
+                </div>
+              }
+
+              <button type="button" class="btn-outline" (click)="addLink()">
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">add</mat-icon>
+                <span>Add link</span>
+              </button>
+            </section>
+
+            <section class="dialog-section">
+              <h2 class="dialog-section-title">
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">bolt</mat-icon>
+                Symbol &amp; Footprint
+              </h2>
+
+              <div class="dialog-grid">
+                <div>
+                  <searchable-select
+                    label="Symbol"
+                    [items]="symbolList"
+                    [value]="part.symbolId ?? null"
+                    (valueChange)="setSymbol($event)"
+                  ></searchable-select>
+
+                  <div class="preview-canvas preview-canvas-symbol">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      [innerHTML]="symbolPreviewImageData"
+                      [attr.viewBox]="symbolPreviewImageViewBox"
+                    ></svg>
+                  </div>
+                </div>
+
+                <div>
+                  <searchable-select
+                    label="Footprint"
+                    [items]="footprintList"
+                    [value]="part.footprintId ?? null"
+                    (valueChange)="setFootprint($event)"
+                  ></searchable-select>
+
+                  <div class="preview-canvas preview-canvas-footprint">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      [innerHTML]="footprintPreviewImageData"
+                      [attr.viewBox]="footprintPreviewImageViewBox"
+                    ></svg>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </mat-tab>
+
+        <mat-tab label="Part Numbers">
+          <div class="pt-4">
+            <div class="surface-panel overflow-x-auto">
+              <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-800 p-4">
+                <div>
+                  <h3 class="panel-title">Part Numbers</h3>
+                  <p class="m-0 text-sm text-gray-400">Manufacturer part numbers for this component</p>
+                </div>
+                <div class="flex shrink-0 flex-wrap items-center gap-2">
+                  <button type="button" class="btn-outline shrink-0" (click)="findAlternatives()" [disabled]="alternativesDisabled" [attr.aria-busy]="searchingAlternatives">
+                    @if (searchingAlternatives) {
+                      <span class="busy-spinner busy-spinner-sm" aria-hidden="true"></span>
+                    }
+                    <span>{{ searchingAlternatives ? 'Searching…' : 'Find alternatives' }}</span>
+                  </button>
+                  <button type="button" class="btn-primary shrink-0" (click)="addPartNumber()">
+                    <mat-icon class="icon-16" fontSet="material-icons-outlined">add</mat-icon>
+                    <span>Add</span>
+                  </button>
+                </div>
+              </div>
+
+              @if (isLoading) {
+                <div class="py-10 text-center text-gray-400">Loading part numbers…</div>
+              }
+
+              @if (!isLoading) {
+                @if (partNumbers.length) {
+                  <table mat-table [dataSource]="partNumbers" class="editor-table">
+                    <ng-container matColumnDef="manufacturer">
+                      <th mat-header-cell *matHeaderCellDef> Manufacturer </th>
+                      <td mat-cell *matCellDef="let row">
+                        <searchable-select
+                          placeholder="Manufacturer"
+                          ariaLabel="Manufacturer"
+                          [items]="manufacturerList"
+                          [value]="row.manufacturerId"
+                          (valueChange)="row.manufacturerId = $event"
+                        ></searchable-select>
+                      </td>
+                    </ng-container>
+                    <ng-container matColumnDef="manufacturerPartNumber">
+                      <th mat-header-cell *matHeaderCellDef> Part Number </th>
+                      <td mat-cell *matCellDef="let row">
+                        <mat-form-field appearance="fill" subscriptSizing="dynamic">
+                          <input matInput [(ngModel)]="row.manufacturerPartNumber" aria-label="Part number" />
+                        </mat-form-field>
+                      </td>
+                    </ng-container>
+                    <ng-container matColumnDef="packageType">
+                      <th mat-header-cell *matHeaderCellDef> Package </th>
+                      <td mat-cell *matCellDef="let row">
+                        <mat-form-field appearance="fill" subscriptSizing="dynamic">
+                          <input matInput [(ngModel)]="row.packageType" aria-label="Package" />
+                        </mat-form-field>
+                      </td>
+                    </ng-container>
+                    <ng-container matColumnDef="quantity">
+                      <th mat-header-cell *matHeaderCellDef class="qty-column"> Qty </th>
+                      <td mat-cell *matCellDef="let row" class="qty-column">
+                        <mat-form-field appearance="fill" subscriptSizing="dynamic">
+                          <input matInput type="number" min="1" [(ngModel)]="row.quantity" aria-label="Quantity" />
+                        </mat-form-field>
+                      </td>
+                    </ng-container>
+                    <ng-container matColumnDef="actions">
+                      <th mat-header-cell *matHeaderCellDef class="actions-column"></th>
+                      <td mat-cell *matCellDef="let row" class="actions-column">
+                        <button type="button" class="btn-icon text-red-400 hover:text-red-300" aria-label="Remove part number" (click)="removePartNumber(row)">
+                          <mat-icon class="icon-16" fontSet="material-icons-outlined">delete</mat-icon>
+                        </button>
+                      </td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="partNumberColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: partNumberColumns;"></tr>
+                  </table>
+                }
+                @if (!partNumbers.length) {
+                  <div class="py-10 text-center">
+                    <mat-icon class="icon-48 mx-auto mb-3 text-gray-600" fontSet="material-icons-outlined">tag</mat-icon>
+                    <p class="m-0 text-gray-400">No part numbers yet.</p>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        </mat-tab>
+
+        <mat-tab label="Order Numbers">
+          <div class="pt-4">
+            <div class="surface-panel overflow-x-auto">
+              <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-800 p-4">
+                <div>
+                  <h3 class="panel-title">Order Numbers</h3>
+                  <p class="m-0 text-sm text-gray-400">
+                    Distributor order numbers, each linked to a part number
+                  </p>
+                </div>
+                <div class="flex shrink-0 flex-wrap items-center gap-2">
+                  <button type="button" class="btn-outline shrink-0" (click)="findOrderNumbers()" [disabled]="ordersDisabled" [attr.aria-busy]="searchingOrders">
+                    @if (searchingOrders) {
+                      <span class="busy-spinner busy-spinner-sm" aria-hidden="true"></span>
+                    }
+                    <span>{{ searchingOrders ? 'Searching…' : 'Find order numbers' }}</span>
+                  </button>
+                  <button type="button" class="btn-primary shrink-0" (click)="addOrderNumber()">
+                    <mat-icon class="icon-16" fontSet="material-icons-outlined">add</mat-icon>
+                    <span>Add</span>
+                  </button>
+                </div>
+              </div>
+
+              @if (isLoading) {
+                <div class="py-10 text-center text-gray-400">Loading order numbers…</div>
+              }
+
+              @if (!isLoading) {
+                @if (orderNumbers.length) {
+                  <table mat-table [dataSource]="orderNumbers" class="editor-table">
+                    <ng-container matColumnDef="partNumber">
+                      <th mat-header-cell *matHeaderCellDef> Part Number </th>
+                      <td mat-cell *matCellDef="let row">
+                        <searchable-select
+                          placeholder="Part number"
+                          ariaLabel="Part number"
+                          [items]="partNumbers"
+                          [idFn]="partNumberId"
+                          [labelFn]="partNumberLabel"
+                          [trackLabels]="true"
+                          [value]="row.partNumberKey"
+                          (valueChange)="row.partNumberKey = $event"
+                        ></searchable-select>
+                      </td>
+                    </ng-container>
+                    <ng-container matColumnDef="distributor">
+                      <th mat-header-cell *matHeaderCellDef> Distributor </th>
+                      <td mat-cell *matCellDef="let row">
+                        <searchable-select
+                          placeholder="Distributor"
+                          ariaLabel="Distributor"
+                          [items]="distributorList"
+                          [value]="row.distributorId"
+                          (valueChange)="row.distributorId = $event"
+                        ></searchable-select>
+                      </td>
+                    </ng-container>
+                    <ng-container matColumnDef="orderNumber">
+                      <th mat-header-cell *matHeaderCellDef> Order Number </th>
+                      <td mat-cell *matCellDef="let row">
+                        <mat-form-field appearance="fill" subscriptSizing="dynamic">
+                          <input matInput [(ngModel)]="row.orderNumberValue" aria-label="Order number" />
+                        </mat-form-field>
+                      </td>
+                    </ng-container>
+                    <ng-container matColumnDef="quantityMin">
+                      <th mat-header-cell *matHeaderCellDef class="qty-column"> Min Qty </th>
+                      <td mat-cell *matCellDef="let row" class="qty-column">
+                        <mat-form-field appearance="fill" subscriptSizing="dynamic">
+                          <input matInput type="number" min="1" [(ngModel)]="row.quantityMin" aria-label="Minimum quantity" />
+                        </mat-form-field>
+                      </td>
+                    </ng-container>
+                    <ng-container matColumnDef="quantitySteps">
+                      <th mat-header-cell *matHeaderCellDef class="qty-column"> Steps </th>
+                      <td mat-cell *matCellDef="let row" class="qty-column">
+                        <mat-form-field appearance="fill" subscriptSizing="dynamic">
+                          <input matInput type="number" min="1" [(ngModel)]="row.quantitySteps" aria-label="Quantity steps" />
+                        </mat-form-field>
+                      </td>
+                    </ng-container>
+                    <ng-container matColumnDef="actions">
+                      <th mat-header-cell *matHeaderCellDef class="actions-column"></th>
+                      <td mat-cell *matCellDef="let row" class="actions-column">
+                        <button type="button" class="btn-icon text-red-400 hover:text-red-300" aria-label="Remove order number" (click)="removeOrderNumber(row)">
+                          <mat-icon class="icon-16" fontSet="material-icons-outlined">delete</mat-icon>
+                        </button>
+                      </td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="orderNumberColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: orderNumberColumns;"></tr>
+                  </table>
+                }
+                @if (!orderNumbers.length) {
+                  <div class="py-10 text-center">
+                    <mat-icon class="icon-48 mx-auto mb-3 text-gray-600" fontSet="material-icons-outlined">shopping_cart</mat-icon>
+                    <p class="m-0 text-gray-400">No order numbers yet.</p>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        </mat-tab>
+
+        <mat-tab label="Alternatives">
+          <div class="grid grid-cols-1 gap-4 pt-4">
+            <div class="surface-panel p-4">
+              <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-end">
+                <mat-form-field appearance="fill" class="flex-1" subscriptSizing="dynamic">
+                  <mat-label>Search</mat-label>
+                  <input
+                    #alternativeSearchTrigger="matAutocompleteTrigger"
+                    matInput
+                    [ngModel]="alternativeSearch"
+                    (ngModelChange)="onAlternativeSearch($event)"
+                    [matAutocomplete]="alternativeAuto"
+                    name="alternativeSearch"
+                    placeholder="Name, value or comment"
+                    autocomplete="off"
+                    />
+                    <mat-autocomplete
+                      #alternativeAuto="matAutocomplete"
+                      autoActiveFirstOption
+                      [displayWith]="displayAlternative"
+                      (optionSelected)="chooseAlternative($event.option.value)"
+                      >
+                      @if (!alternativeSearch.trim()) {
+                        <mat-option disabled>Type a name, value or comment</mat-option>
+                      }
+                      @for (candidate of alternativeChoices; track candidate) {
+                        <mat-option [value]="candidate">
+                          {{ partOptionLabel(candidate) }}
+                        </mat-option>
+                      }
+                      @if (alternativeSearch.trim() && !alternativeChoices.length) {
+                        <mat-option disabled>No matches</mat-option>
+                      }
+                      @if (alternativeTruncated) {
+                        <mat-option disabled>Showing the first {{ alternativeResultLimit }} matches</mat-option>
+                      }
+                    </mat-autocomplete>
+                  </mat-form-field>
+                  <button type="button" class="btn-outline" (click)="addAlternative()" [disabled]="alternativeToAdd == null">
+                    Add
+                  </button>
+                </div>
+
+                <table mat-table [dataSource]="selectedAlternatives" class="editor-table">
+                  <ng-container matColumnDef="name">
+                    <th mat-header-cell *matHeaderCellDef> Name </th>
+                    <td mat-cell *matCellDef="let row"> {{ row.name }} </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="value">
+                    <th mat-header-cell *matHeaderCellDef> Value </th>
+                    <td mat-cell *matCellDef="let row"> {{ row.value || '—' }} </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="comment">
+                    <th mat-header-cell *matHeaderCellDef> Comment </th>
+                    <td mat-cell *matCellDef="let row"> {{ row.comment || '—' }} </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef class="actions-column"></th>
+                    <td mat-cell *matCellDef="let row" class="actions-column">
+                      <button type="button" class="btn-icon text-red-400 hover:text-red-300" aria-label="Remove alternative" (click)="removeAlternative(row.id)">
+                        <mat-icon class="icon-16" fontSet="material-icons-outlined">delete</mat-icon>
+                      </button>
+                    </td>
+                  </ng-container>
+
+                  <tr mat-header-row *matHeaderRowDef="alternativeColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: alternativeColumns;"></tr>
+                </table>
+
+                @if (!selectedAlternatives.length) {
+                  <div class="py-10 text-center">
+                    <mat-icon class="icon-48 mx-auto mb-3 text-gray-600" fontSet="material-icons-outlined">swap_horiz</mat-icon>
+                    <p class="m-0 text-gray-400">No alternative parts selected.</p>
+                  </div>
+                }
+              </div>
+            </div>
+          </mat-tab>
+        </mat-tab-group>
+
+      </mat-dialog-content>
+
+      <mat-dialog-actions align="end">
+        <button type="button" class="btn-outline" (click)="close()" [disabled]="isSaving || distributorBusy || imageUploading">Cancel</button>
+        <button type="button" class="btn-primary" (click)="confirm()" [disabled]="isSaving || isLoading || distributorBusy || imageUploading">
+          {{ isSaving ? 'Saving…' : 'Save' }}
+        </button>
+      </mat-dialog-actions>

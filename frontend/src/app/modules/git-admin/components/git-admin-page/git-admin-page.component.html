@@ -1,0 +1,168 @@
+<app-header
+  icon="hub"
+  pageTitle="Git Integration"
+  subtitle="Hosts, credentials and repositories KiComLib mirrors"
+  >
+</app-header>
+
+<div class="page-container space-y-4">
+  @if (error) {
+    <p class="surface-panel p-4 text-red-400">{{ error }}</p>
+  }
+  @if (message) {
+    <p class="surface-panel p-4 text-green-400">{{ message }}</p>
+  }
+  @if (copied) {
+    <p class="surface-panel p-4 text-green-400">{{ copied }}</p>
+  }
+  @if (webhookNotice) {
+    <section class="surface-panel space-y-2 p-4">
+      <h2 class="panel-title">New webhook secret</h2>
+      <p class="m-0 text-sm text-gray-400">Shown once. Store it in the Git host now.</p>
+      <p class="m-0 break-all font-mono text-sm text-white">{{ webhookNotice.secret }}</p>
+      @if (webhookNotice.url) {
+        <p class="m-0 break-all text-sm text-gray-300">{{ webhookNotice.url }}</p>
+      }
+      @if (webhookNotice.instructions) {
+        <pre class="whitespace-pre-wrap text-sm text-gray-300">{{ webhookNotice.instructions }}</pre>
+      }
+      <button type="button" class="btn-outline" (click)="copy(webhookNotice.secret, 'Webhook secret copied.')">Copy secret</button>
+    </section>
+  }
+  @if (loading) {
+    <p class="surface-panel p-6 text-gray-400">Loading Git integration…</p>
+  }
+
+  @if (!loading && auth.profile().isAdmin) {
+    <mat-tab-group>
+      <mat-tab label="Hosts">
+        <div class="pt-4">
+          <button type="button" class="btn-primary mb-4" (click)="editHost(null)">Add host</button>
+          <div class="surface-panel overflow-hidden">
+            <table mat-table [dataSource]="hosts">
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef> Name </th>
+                <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+              </ng-container>
+              <ng-container matColumnDef="kind">
+                <th mat-header-cell *matHeaderCellDef> Kind </th>
+                <td mat-cell *matCellDef="let row">{{ row.kind }}</td>
+              </ng-container>
+              <ng-container matColumnDef="webUrl">
+                <th mat-header-cell *matHeaderCellDef> Web URL </th>
+                <td mat-cell *matCellDef="let row" class="mono-cell">{{ row.webUrl }}</td>
+              </ng-container>
+              <ng-container matColumnDef="ssh">
+                <th mat-header-cell *matHeaderCellDef> SSH </th>
+                <td mat-cell *matCellDef="let row">{{ row.sshHost || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef> Actions </th>
+                <td mat-cell *matCellDef="let row">
+                  <div class="flex gap-2">
+                    <button type="button" class="btn-outline" (click)="editHost(row)">Edit</button>
+                    <button type="button" class="btn-outline" (click)="deleteHost(row)" [disabled]="row.isSystem">Delete</button>
+                  </div>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="hostColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: hostColumns;"></tr>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+      <mat-tab label="Credentials">
+        <div class="pt-4">
+          <button type="button" class="btn-primary mb-4" (click)="editCredential(null)">Add credential</button>
+          <div class="surface-panel overflow-hidden">
+            <table mat-table [dataSource]="credentials">
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef> Name </th>
+                <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+              </ng-container>
+              <ng-container matColumnDef="host">
+                <th mat-header-cell *matHeaderCellDef> Host </th>
+                <td mat-cell *matCellDef="let row">{{ hostName(row.hostId) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="kind">
+                <th mat-header-cell *matHeaderCellDef> Kind </th>
+                <td mat-cell *matCellDef="let row">{{ row.kind === 'ssh_key' ? 'SSH key' : 'HTTPS token' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="hint">
+                <th mat-header-cell *matHeaderCellDef> Secret hint </th>
+                <td mat-cell *matCellDef="let row" class="mono-cell">{{ row.secretHint || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="expires">
+                <th mat-header-cell *matHeaderCellDef> Expires </th>
+                <td mat-cell *matCellDef="let row">{{ expiryLabel(row.expiresAt) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef> Actions </th>
+                <td mat-cell *matCellDef="let row">
+                  <div class="flex flex-wrap gap-2">
+                    @if (row.publicKey) {
+                      <button type="button" class="btn-outline" (click)="copy(row.publicKey, 'Public key copied.')">Copy public key</button>
+                    }
+                    <button type="button" class="btn-outline" (click)="editCredential(row)">Replace secret</button>
+                    <button type="button" class="btn-outline" (click)="deleteCredential(row)">Delete</button>
+                  </div>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="credentialColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: credentialColumns;"></tr>
+            </table>
+          </div>
+        </div>
+      </mat-tab>
+      <mat-tab label="Repositories">
+        <div class="pt-4">
+          <button type="button" class="btn-primary mb-4" (click)="addRepository()">Add repository</button>
+          <div class="surface-panel overflow-hidden">
+            <table mat-table [dataSource]="repositories">
+              <ng-container matColumnDef="path">
+                <th mat-header-cell *matHeaderCellDef> Repository </th>
+                <td mat-cell *matCellDef="let row">
+                  <div>{{ row.providerPath || row.cloneUrl }}</div>
+                  <div class="text-xs text-gray-400">{{ hostName(row.hostId) }}</div>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef> Status </th>
+                <td mat-cell *matCellDef="let row"><span class="badge badge-muted">{{ row.status }}</span></td>
+              </ng-container>
+              <ng-container matColumnDef="sync">
+                <th mat-header-cell *matHeaderCellDef> Sync </th>
+                <td mat-cell *matCellDef="let row">{{ row.syncMode }}</td>
+              </ng-container>
+              <ng-container matColumnDef="fetch">
+                <th mat-header-cell *matHeaderCellDef> Last fetch </th>
+                <td mat-cell *matCellDef="let row">{{ row.lastFetchAt ? (row.lastFetchAt | date:'medium') : '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="error">
+                <th mat-header-cell *matHeaderCellDef> Last error </th>
+                <td mat-cell *matCellDef="let row">{{ row.lastError || '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef> Actions </th>
+                <td mat-cell *matCellDef="let row">
+                  <div class="flex flex-wrap gap-2">
+                    <button type="button" class="btn-outline" (click)="sync(row)">Sync</button>
+                    <button type="button" class="btn-outline" (click)="discover(row)">Discover</button>
+                    <button type="button" class="btn-outline" (click)="rotateWebhook(row)">Rotate webhook</button>
+                    <button type="button" class="btn-outline" (click)="deleteRepository(row, false)">Delete</button>
+                    <button type="button" class="btn-outline" (click)="deleteRepository(row, true)">Delete with projects</button>
+                  </div>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="repositoryColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: repositoryColumns;"></tr>
+            </table>
+            @if (!repositories.length) {
+              <p class="p-6 text-sm text-gray-400">No repositories yet.</p>
+            }
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  }
+</div>

@@ -1,0 +1,37 @@
+<div class="flex min-h-screen items-center justify-center px-4 py-10">
+  <form class="surface-panel w-full max-w-md p-8" (ngSubmit)="submit()">
+    <div class="mb-6 flex items-center gap-3">
+      <div class="icon-tile bg-blue-600 p-2">
+        <span class="text-lg font-bold text-white">K</span>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-white">Sign in</h1>
+        <p class="text-sm text-gray-400">KiComLib Library</p>
+      </div>
+    </div>
+
+    @if (expired) {
+      <p class="mb-4 text-sm text-amber-300">Your session has expired. Sign in again.</p>
+    }
+    @if (!expired) {
+      <p class="mb-4 text-sm text-gray-400">Sign in with your KiComLib account.</p>
+    }
+
+    <label class="mb-3 block text-sm">
+      <span class="mb-1 block text-gray-400">Username</span>
+      <input class="input-dark" name="username" [(ngModel)]="username" autocomplete="username" required />
+    </label>
+    <label class="mb-4 block text-sm">
+      <span class="mb-1 block text-gray-400">Password</span>
+      <input class="input-dark" type="password" name="password" [(ngModel)]="password" autocomplete="current-password" required />
+    </label>
+
+    @if (error) {
+      <p class="mb-4 text-sm text-red-400">{{ error }}</p>
+    }
+
+    <button type="submit" class="btn-primary w-full" [disabled]="isSubmitting || !username.trim() || !password">
+      Sign in
+    </button>
+  </form>
+</div>

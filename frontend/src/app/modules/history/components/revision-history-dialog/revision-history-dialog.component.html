@@ -1,0 +1,128 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>
+    History{{ data.name ? ' — ' + data.name : '' }}
+  </h1>
+  <div class="spacer"></div>
+  <span class="badge badge-muted mr-2">{{ data.entity }} #{{ data.id }}</span>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  @if (isLoading) {
+    <div class="py-6 text-gray-400">Loading revisions…</div>
+  }
+  @if (!isLoading && loadError) {
+    <div class="py-6 text-red-400">{{ loadError }}</div>
+  }
+
+  @if (!isLoading && !loadError) {
+    <section class="dialog-section">
+      <h3 class="panel-title mb-3">Revisions</h3>
+      <div class="surface-panel overflow-hidden">
+        <table mat-table [dataSource]="revisions">
+          <ng-container matColumnDef="revisionNo">
+            <th mat-header-cell *matHeaderCellDef> Rev </th>
+            <td mat-cell *matCellDef="let row" class="mono-cell"> {{ row.revisionNo }} </td>
+          </ng-container>
+          <ng-container matColumnDef="message">
+            <th mat-header-cell *matHeaderCellDef> Message </th>
+            <td mat-cell *matCellDef="let row"> {{ row.message }} </td>
+          </ng-container>
+          <ng-container matColumnDef="author">
+            <th mat-header-cell *matHeaderCellDef> Author </th>
+            <td mat-cell *matCellDef="let row"> {{ row.author }} </td>
+          </ng-container>
+          <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef> Date </th>
+            <td mat-cell *matCellDef="let row" class="mono-cell"> {{ row.createdAt | date:'medium' }} </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="actions_column"> </th>
+            <td mat-cell *matCellDef="let row" class="actions_column">
+              @if (row.isDeleted) {
+                <span class="badge badge-destructive mr-2">deleted</span>
+              }
+              @if (auth.canWrite()) {
+                <button
+                  type="button"
+                  class="btn-outline"
+                  [disabled]="isCurrent(row) || isRestoring"
+                  [title]="isCurrent(row) ? 'This is the current revision' : 'Make this revision current'"
+                  (click)="restore(row)"
+                  >
+                  Restore
+                </button>
+              }
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="revisionColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: revisionColumns;"></tr>
+        </table>
+        @if (!revisions.length) {
+          <div class="py-8 text-center text-gray-400">
+            No revisions recorded for this entity.
+          </div>
+        }
+      </div>
+    </section>
+    @if (actionMessage) {
+      <p class="mb-3 text-sm text-green-400">{{ actionMessage }}</p>
+    }
+    @if (actionError) {
+      <p class="mb-3 text-sm text-red-400">{{ actionError }}</p>
+    }
+    @if (revisions.length) {
+      <section class="dialog-section">
+        <h3 class="panel-title mb-3">Compare revisions</h3>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <label class="block text-sm">
+            <span class="mb-1 block text-gray-400">From</span>
+            <select class="input-dark" [(ngModel)]="fromRev">
+              @for (rev of revisions; track rev) {
+                <option [ngValue]="rev.revisionNo">
+                  r{{ rev.revisionNo }} — {{ rev.message }}
+                </option>
+              }
+            </select>
+          </label>
+          <label class="block text-sm">
+            <span class="mb-1 block text-gray-400">To</span>
+            <select class="input-dark" [(ngModel)]="toRev">
+              @for (rev of revisions; track rev) {
+                <option [ngValue]="rev.revisionNo">
+                  r{{ rev.revisionNo }} — {{ rev.message }}
+                </option>
+              }
+            </select>
+          </label>
+          <div class="flex items-end">
+            <button type="button" class="btn-primary w-full" (click)="loadDiff()" [disabled]="fromRev == null || toRev == null">
+              <mat-icon class="icon-16" fontSet="material-icons-outlined">difference</mat-icon>
+              <span>Show Diff</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    }
+    @if (revisions.length) {
+      <section class="dialog-section mb-0">
+        <h3 class="panel-title mb-3">Diff</h3>
+        @if (isLoadingDiff) {
+          <div class="text-sm text-gray-400">Loading diff…</div>
+        }
+        @if (!isLoadingDiff && diffError) {
+          <div class="text-sm text-red-400">{{ diffError }}</div>
+        }
+        @if (!isLoadingDiff && !diffError) {
+          <diff-view [diff]="diff"></diff-view>
+        }
+      </section>
+    }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button type="button" class="btn-outline" (click)="close()">Close</button>
+</mat-dialog-actions>

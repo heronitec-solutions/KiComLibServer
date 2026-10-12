@@ -1,0 +1,6 @@
+target-version = "py312"
+
+[lint]
+# Pyflakes plus syntax and runtime errors. Style rules stay off so the
+# check matches the code that is already in the tree.
+select = ["E9", "F"]

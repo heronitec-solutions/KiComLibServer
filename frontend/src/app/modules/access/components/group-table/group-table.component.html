@@ -1,0 +1,140 @@
+<app-header
+  icon="shield"
+  pageTitle="User Groups"
+  subtitle="Groups decide who may read or change the catalog, and who may read or change the warehouse"
+  >
+  <button type="button" class="btn-primary" (click)="add()">
+    <mat-icon class="icon-16" fontSet="material-icons-outlined">add</mat-icon>
+    <span>Add Group</span>
+  </button>
+</app-header>
+
+<div class="page-container">
+  @if (error) {
+    <p class="surface-panel mb-6 p-4 text-red-400">{{ error }}</p>
+  }
+  @if (isLoading) {
+    <div class="surface-panel p-6 text-gray-400">Loading groups…</div>
+  }
+
+  @if (!isLoading) {
+    <div class="surface-panel mb-6 p-6">
+      <div class="mb-4 flex items-center gap-2">
+        <mat-icon class="icon-20 text-gray-400" fontSet="material-icons-outlined">filter_list</mat-icon>
+        <h3 class="panel-title">Search &amp; Filter</h3>
+      </div>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div class="relative">
+          <mat-icon
+            class="icon-16 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            fontSet="material-icons-outlined"
+          >search</mat-icon>
+          <input
+            type="text"
+            class="input-dark pl-10"
+            placeholder="Search groups..."
+            [ngModel]="filter.search"
+            (ngModelChange)="onSearchChange($event)"
+            />
+          </div>
+          <select class="input-dark" [ngModel]="filter.source" (ngModelChange)="onSourceChange($event)">
+            <option value="all">All sources</option>
+            <option value="local">Local</option>
+            <option value="directory">Directory</option>
+          </select>
+          <select class="input-dark" [ngModel]="filter.rights" (ngModelChange)="onRightsChange($event)">
+            <option value="all">All rights</option>
+            <option value="catalog-read">Catalog read</option>
+            <option value="catalog-write">Catalog read and write</option>
+            <option value="warehouse-read">Warehouse read</option>
+            <option value="warehouse-write">Warehouse read and write</option>
+            <option value="admin">Administrators</option>
+            <option value="none">No access</option>
+          </select>
+          @if (hasActiveFilters) {
+            <button type="button" class="btn-outline" (click)="clearFilters()">
+              <mat-icon class="icon-16" fontSet="material-icons-outlined">close</mat-icon>
+              <span>Clear Filters</span>
+            </button>
+          }
+        </div>
+      </div>
+      <div class="surface-panel overflow-hidden">
+        <table mat-table [dataSource]="filteredGroups">
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef> Name </th>
+            <td mat-cell *matCellDef="let row">
+              <div>{{ row.name }}</div>
+              @if (row.directoryDn) {
+                <div class="max-w-xs truncate text-xs text-gray-400" [title]="row.directoryDn">{{ row.directoryDn }}</div>
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="source">
+            <th mat-header-cell *matHeaderCellDef> Source </th>
+            <td mat-cell *matCellDef="let row">
+              <span class="badge badge-muted">{{ row.source === 'directory' ? 'Directory' : 'Local' }}</span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="description">
+            <th mat-header-cell *matHeaderCellDef> Description </th>
+            <td mat-cell *matCellDef="let row"> {{ row.description || '—' }} </td>
+          </ng-container>
+          <ng-container matColumnDef="rights">
+            <th mat-header-cell *matHeaderCellDef> Rights </th>
+            <td mat-cell *matCellDef="let row">
+              <div class="flex flex-wrap gap-1">
+                @for (right of rights(row); track right) {
+                  <span class="badge badge-muted">{{ right }}</span>
+                }
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="members">
+            <th mat-header-cell *matHeaderCellDef> Members </th>
+            <td mat-cell *matCellDef="let row" class="mono-cell"> {{ row.memberCount }} </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="actions_column"> Actions </th>
+            <td mat-cell *matCellDef="let row" class="actions_column">
+              <div class="flex space-x-1">
+                <button type="button" class="btn-icon text-yellow-400 hover:text-yellow-300" aria-label="Edit group" (click)="edit(row)">
+                  <mat-icon class="icon-16" fontSet="material-icons-outlined">edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon text-red-400 hover:text-red-300"
+                  aria-label="Delete group"
+                  [disabled]="isAdmins(row)"
+                  [title]="isAdmins(row) ? 'The Admins group cannot be deleted' : (row.source === 'directory' ? 'Delete this group and its directory link' : 'Delete group')"
+                  (click)="remove(row)"
+                  >
+                  <mat-icon class="icon-16" fontSet="material-icons-outlined">delete_forever</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: columns;"
+            class="cursor-pointer"
+            tabindex="0"
+            (click)="onRowClick(row, $event)"
+            (keydown.enter)="onRowClick(row, $event)"
+          ></tr>
+        </table>
+      </div>
+      @if (filteredGroups.length === 0) {
+        <div class="surface-panel mt-6 py-12 text-center">
+          <mat-icon class="icon-48 mx-auto mb-4 text-gray-600" fontSet="material-icons-outlined">shield</mat-icon>
+          <h3 class="mb-2 text-lg font-medium text-white">No groups found</h3>
+          <p class="text-gray-400">
+            {{ hasActiveFilters
+            ? 'Try adjusting your search or filters'
+            : 'Get started by adding your first group' }}
+          </p>
+        </div>
+      }
+    }
+  </div>

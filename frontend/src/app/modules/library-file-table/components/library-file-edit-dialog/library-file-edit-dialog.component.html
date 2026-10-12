@@ -1,0 +1,51 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>
+    {{ id < 0 ? "New Library File" : "Edit Library File" }}
+  </h1>
+  <div class="spacer"></div>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <div class="dialog-grid">
+    <mat-form-field appearance="fill">
+      <mat-label>Name</mat-label>
+      <input matInput type="text" [(ngModel)]="libraryFile.name" required />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Type</mat-label>
+      <mat-select [(ngModel)]="libraryFile.type">
+        <mat-option [value]="1">Symbol</mat-option>
+        <mat-option [value]="0">Footprint</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Filename</mat-label>
+      <input matInput type="text" [(ngModel)]="libraryFile.filename" required />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Version</mat-label>
+      <input matInput type="text" [(ngModel)]="libraryFile.version" />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="dialog-grid-full">
+      <mat-label>Comment</mat-label>
+      <input matInput type="text" [(ngModel)]="libraryFile.comment" />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="dialog-grid-full">
+      <mat-label>Description</mat-label>
+      <input matInput type="text" [(ngModel)]="libraryFile.description" />
+    </mat-form-field>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button type="button" class="btn-outline" (click)="close()">Cancel</button>
+  <button type="button" class="btn-primary" (click)="confirm()">Save</button>
+</mat-dialog-actions>

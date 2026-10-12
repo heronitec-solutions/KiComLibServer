@@ -1,0 +1,102 @@
+# KiComLib with NGINX as the HTTPS endpoint.
+# Do not run this beside compose.yml. Stop that stack first (`docker compose down`);
+# data volumes in this directory are reused.
+#
+#   cd deployment
+#   # TLS certificate. The nginx master runs as root, so a root-owned key (mode 600) is enough:
+#   #   certs/fullchain.pem
+#   #   certs/privkey.pem
+#   docker compose -f compose_ssl.yml up -d
+#
+# Set PUBLIC_BASE_URL to the external https origin. Webhook URLs are built from it.
+# Rebuild kicomlib-server after pulling these sources: the image must understand TRUSTED_PROXIES.
+# 172.28.10.10 (proxy) and 172.28.10.20 (kicomlib) are fixed addresses on the edge network.
+# client_max_body_size in proxy/nginx.conf follows the default BACKUP_MAX_MB of 2048.
+
+services:
+  db:
+    image: docker.io/library/postgres:18
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    volumes:
+      - ./postgresql:/var/lib/postgresql
+    environment:
+      POSTGRES_DB: kicomlib
+      POSTGRES_USER: dbuser
+      POSTGRES_PASSWORD: ${KICOMLIB_DB_PASSWORD:?KICOMLIB_DB_PASSWORD is required}
+    networks: [edge]
+
+  kicomlib:
+    image: docker.io/heronitecsolutions/kicomlib-server:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: kicomlib
+      DB_USER: dbuser
+      DB_PASSWORD: ${KICOMLIB_DB_PASSWORD:?KICOMLIB_DB_PASSWORD is required}
+      DB_AUTO_INIT: "true"
+      DB_STARTUP_TIMEOUT_SECONDS: "120"
+      BLOB_MAX_SIZE_MB: "200"
+      PUBLIC_BASE_URL: "https://kicomlib.example.com"
+      KICAD_RUNNER_URL: "http://kicad-runner:8080"
+      KICAD_RUNNER_TOKEN: ${KICAD_RUNNER_TOKEN:?KICAD_RUNNER_TOKEN is required}
+      # Address of the proxy container. Not a host address.
+      TRUSTED_PROXIES: "172.28.10.10"
+    volumes:
+      - ./backups:/app/Data/Backups
+      - ./repos:/app/Data/Repos
+      - ./cache:/app/Data/ProjectCache
+      # Data Protection key ring. Back up this directory separately from the database.
+      - ./keys:/app/Data/Keys
+    networks:
+      edge:
+        ipv4_address: 172.28.10.20
+      runner: {}
+
+  proxy:
+    image: docker.io/library/nginx:1.28-alpine
+    restart: unless-stopped
+    depends_on:
+      - kicomlib
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+      - ./certbot:/var/www/certbot:ro
+    networks:
+      edge:
+        ipv4_address: 172.28.10.10
+
+  kicad-runner:
+    image: docker.io/heronitecsolutions/kicomlib-kicad-runner:latest
+    restart: unless-stopped
+    environment:
+      RUNNER_TOKEN: ${KICAD_RUNNER_TOKEN:?KICAD_RUNNER_TOKEN is required}
+      RUNNER_MAX_PARALLEL: "4"
+    read_only: true
+    # mode 1777: the short tmpfs form mounts root-owned 0755, and the runner user cannot create files there.
+    tmpfs:
+      - /work:mode=1777
+      - /tmp:mode=1777
+    mem_limit: 8g
+    cpus: 4
+    networks: [runner]
+
+networks:
+  edge:
+    ipam:
+      config:
+        - subnet: 172.28.10.0/24
+  runner:
+    internal: true

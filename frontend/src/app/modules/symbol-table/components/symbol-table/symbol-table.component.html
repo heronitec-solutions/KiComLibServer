@@ -1,0 +1,137 @@
+<app-header
+  icon="bolt"
+  pageTitle="Symbols"
+  subtitle="Schematic symbols available in the library files"
+></app-header>
+
+<div class="page-container">
+  <div class="surface-panel mb-6 p-6">
+    <div class="mb-4 flex items-center gap-2">
+      <mat-icon class="icon-20 text-gray-400" fontSet="material-icons-outlined">filter_list</mat-icon>
+      <h3 class="panel-title">Search &amp; Filter</h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div class="relative">
+        <mat-icon
+          class="icon-16 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          fontSet="material-icons-outlined"
+        >search</mat-icon>
+        <input
+          type="text"
+          class="input-dark pl-10"
+          placeholder="Search symbols..."
+          [ngModel]="filter.search"
+          (ngModelChange)="onSearchChange($event)"
+          />
+        </div>
+
+        <select class="input-dark" [ngModel]="filter.libraryFileId" (ngModelChange)="onLibraryFileChange($event)">
+          <option [ngValue]="'all'">All library files</option>
+          @for (file of libraryFiles; track file) {
+            <option [ngValue]="file.id">{{ file.name }}</option>
+          }
+        </select>
+
+        <select class="input-dark" [ngModel]="filter.inBom" (ngModelChange)="onInBomChange($event)">
+          <option [ngValue]="'all'">All BOM flags</option>
+          <option [ngValue]="'yes'">In BOM</option>
+          <option [ngValue]="'no'">Not in BOM</option>
+        </select>
+
+        @if (hasActiveFilters) {
+          <button type="button" class="btn-outline" (click)="clearFilters()">
+            <mat-icon class="icon-16" fontSet="material-icons-outlined">close</mat-icon>
+            <span>Clear Filters</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="surface-panel overflow-hidden">
+      <table
+        mat-table
+        matSort
+        matSortActive="id"
+        matSortDirection="asc"
+        matSortDisableClear
+        [dataSource]="dataSource"
+        (matSortChange)="sortData($event)"
+        >
+        <!-- ID Column -->
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="tiny_column"> ID </th>
+          <td mat-cell *matCellDef="let row" class="tiny_column"> {{row.id}} </td>
+        </ng-container>
+
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> Name </th>
+          <td mat-cell *matCellDef="let row"> {{row.name}} </td>
+        </ng-container>
+
+        <!-- Description Column -->
+        <ng-container matColumnDef="description">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> Description </th>
+          <td mat-cell *matCellDef="let row"> {{row.description}} </td>
+        </ng-container>
+
+        <!-- Library File Column -->
+        <ng-container matColumnDef="libraryFileId">
+          <th mat-header-cell *matHeaderCellDef> Library File </th>
+          <td mat-cell *matCellDef="let row" class="mono-cell"> {{row.libraryFileId}} </td>
+        </ng-container>
+
+        <!-- Revision Column -->
+        <ng-container matColumnDef="revisionNo">
+          <th mat-header-cell *matHeaderCellDef> Rev </th>
+          <td mat-cell *matCellDef="let row" class="mono-cell"> {{row.revisionNo ?? '—'}} </td>
+        </ng-container>
+
+        <!-- In BOM Column -->
+        <ng-container matColumnDef="inBom">
+          <th mat-header-cell *matHeaderCellDef> In BOM </th>
+          <td mat-cell *matCellDef="let row">
+            <span class="badge" [ngClass]="row.inBom ? 'badge-success' : 'badge-muted'">
+              {{ row.inBom ? 'Yes' : 'No' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="actions_column"> Actions </th>
+          <td mat-cell *matCellDef="let row" class="actions_column">
+            <button
+              type="button"
+              class="btn-icon text-blue-400 hover:text-blue-300"
+              aria-label="Revision history"
+              (click)="openHistory(row, $event)"
+              >
+              <mat-icon class="icon-16" fontSet="material-icons-outlined">history</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <mat-paginator
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        [pageSize]="25"
+        showFirstLastButtons
+        aria-label="Select page of symbols"
+      ></mat-paginator>
+    </div>
+
+    @if ((dataSource.filteredCount$ | async) === 0 && (dataSource.isLoading$ | async) === false) {
+      <div class="surface-panel mt-6 py-12 text-center">
+        <mat-icon class="icon-48 mx-auto mb-4 text-gray-600" fontSet="material-icons-outlined">bolt</mat-icon>
+        <h3 class="mb-2 text-lg font-medium text-white">No symbols found</h3>
+        <p class="m-0 text-gray-400">
+          {{ hasActiveFilters ? 'Try adjusting your search or filters' : 'Symbols show up here once they are stored in a library file.' }}
+        </p>
+      </div>
+    }
+  </div>

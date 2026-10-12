@@ -1,0 +1,58 @@
+:host {
+  display: block;
+}
+
+.diff-unified {
+  overflow-x: auto;
+  font-size: 0.8125rem;
+}
+
+.diff-empty {
+  margin: 0;
+  padding: 0.75rem;
+  color: #9ca3af;
+}
+
+/* diff2html's light theme paints info rows and line numbers white.
+   The commit page is dark, so those surfaces stay dark and the text stays light. */
+:host ::ng-deep .d2h-wrapper {
+  background: transparent;
+  color: #e5e7eb;
+}
+
+:host ::ng-deep .d2h-file-header {
+  background-color: #1f2937;
+  color: #e5e7eb;
+  border-color: #374151;
+}
+
+:host ::ng-deep .d2h-file-wrapper {
+  border-color: #374151;
+  margin-bottom: 0;
+}
+
+:host ::ng-deep .d2h-code-linenumber {
+  background-color: #111827;
+  border-color: #374151;
+  color: #9ca3af;
+}
+
+:host ::ng-deep .d2h-info {
+  background-color: #1f2937;
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+:host ::ng-deep .d2h-code-line-ctn,
+:host ::ng-deep .d2h-code-side-line,
+:host ::ng-deep .d2h-code-line {
+  color: #e5e7eb;
+}
+
+:host ::ng-deep .d2h-ins {
+  background-color: rgba(22, 101, 52, 0.35);
+}
+
+:host ::ng-deep .d2h-del {
+  background-color: rgba(153, 27, 27, 0.35);
+}

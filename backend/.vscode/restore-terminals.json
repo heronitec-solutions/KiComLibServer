@@ -1,0 +1,40 @@
+{
+    "artificialDelayMilliseconds": 300,
+    "keepExistingTerminalsOpen": false,
+    "runOnStartup": true,
+    "terminals": [
+        {
+            "splitTerminals": [
+                {
+                    "name": "Build",
+                    "commands": [
+                        "clear;dotnet build"
+                    ],
+                    "shouldRunCommands": false
+                }
+            ]
+        },
+        {
+            "splitTerminals": [
+                {
+                    "name": "Build Docker Image",
+                    "commands": [
+                        "clear;sudo ./build_docker_image.sh"
+                    ],
+                    "shouldRunCommands": false
+                }
+            ]
+        },
+        {
+            "splitTerminals": [
+                {
+                    "name": "Serve",
+                    "commands": [
+                        "clear;dotnet run"
+                    ],
+                    "shouldRunCommands": false
+                }
+            ]
+        }
+    ]
+}

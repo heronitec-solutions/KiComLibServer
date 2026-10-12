@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 760" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <title>KiComLib Teilekatalog</title>
+  <rect width="1280" height="760" fill="#030712"/>
+  <rect width="72" height="760" fill="#111827"/>
+  <line x1="72" y1="0" x2="72" y2="760" stroke="#1f2937"/>
+
+  <g transform="translate(16,18)" fill="#4667db">
+    <rect width="40" height="8" rx="2"/>
+    <rect y="14" width="40" height="8" rx="2"/>
+    <rect y="28" width="40" height="8" rx="2"/>
+    <circle cx="34" cy="32" r="9" fill="#ffa350"/>
+  </g>
+
+  <g fill="none" stroke="#9ca3af" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(24,88)">
+      <rect x="-8" y="-8" width="40" height="40" rx="8" fill="#1f2937" stroke="none"/>
+      <rect x="3" y="6" width="18" height="14" rx="2" fill="none" stroke="#fff"/>
+      <path d="M7 6V4h10v2" stroke="#fff"/>
+    </g>
+    <g transform="translate(24,140)" stroke="#9ca3af">
+      <path d="M4 18V8h8l6 6v10H4z"/>
+      <path d="M12 8v6h6"/>
+    </g>
+    <g transform="translate(24,192)">
+      <rect x="3" y="4" width="18" height="18" rx="3"/>
+      <path d="M8 13h8M12 9v8"/>
+    </g>
+    <g transform="translate(24,244)">
+      <path d="M5 18c2-8 12-8 14 0"/>
+      <circle cx="12" cy="8" r="3"/>
+    </g>
+    <g transform="translate(24,296)">
+      <circle cx="12" cy="12" r="7"/>
+      <path d="M12 9v4l2 2"/>
+    </g>
+  </g>
+
+  <rect x="72" y="0" width="1208" height="96" fill="#111827"/>
+  <line x1="72" y1="96" x2="1280" y2="96" stroke="#1f2937"/>
+  <rect x="108" y="26" width="48" height="48" rx="10" fill="#2563eb"/>
+  <g transform="translate(120,38)" fill="none" stroke="#fff" stroke-width="1.7" stroke-linejoin="round">
+    <rect x="3" y="6" width="18" height="14" rx="2"/>
+    <path d="M7 6V4h10v2"/>
+  </g>
+  <text x="172" y="48" fill="#fff" font-size="28" font-weight="700">Parts</text>
+  <text x="172" y="72" fill="#9ca3af" font-size="14">Manage electronic components, symbols, and footprints</text>
+
+  <g font-size="14" font-weight="600">
+    <rect x="980" y="32" width="104" height="36" rx="8" fill="none" stroke="#374151"/>
+    <text x="1032" y="55" fill="#e5e7eb" text-anchor="middle">Export</text>
+    <rect x="1096" y="32" width="156" height="36" rx="8" fill="#2563eb"/>
+    <text x="1174" y="55" fill="#fff" text-anchor="middle">Add Component</text>
+  </g>
+
+  <rect x="96" y="120" width="1156" height="112" rx="10" fill="#111827" stroke="#1f2937"/>
+  <text x="124" y="154" fill="#fff" font-size="16" font-weight="650">Search &amp; Filter</text>
+  <g font-size="14">
+    <rect x="124" y="172" width="280" height="40" rx="8" fill="#030712" stroke="#1f2937"/>
+    <text x="148" y="197" fill="#6b7280">Search name, value, MPN...</text>
+    <rect x="420" y="172" width="190" height="40" rx="8" fill="#030712" stroke="#1f2937"/>
+    <text x="436" y="197" fill="#e5e7eb">All Libraries</text>
+    <rect x="626" y="172" width="210" height="40" rx="8" fill="#030712" stroke="#1f2937"/>
+    <text x="642" y="197" fill="#e5e7eb">All Manufacturers</text>
+    <rect x="852" y="172" width="170" height="40" rx="8" fill="#030712" stroke="#1f2937"/>
+    <text x="868" y="197" fill="#e5e7eb">All Statuses</text>
+  </g>
+
+  <rect x="96" y="252" width="1156" height="480" rx="10" fill="#111827" stroke="#1f2937"/>
+  <text x="124" y="292" fill="#9ca3af" font-size="13" font-weight="650">Name</text>
+  <text x="470" y="292" fill="#9ca3af" font-size="13" font-weight="650">Value</text>
+  <text x="760" y="292" fill="#9ca3af" font-size="13" font-weight="650">Comment</text>
+  <text x="1040" y="292" fill="#9ca3af" font-size="13" font-weight="650">Status</text>
+  <line x1="112" y1="308" x2="1236" y2="308" stroke="#1f2937"/>
+
+  <g font-size="15">
+    <rect x="112" y="316" width="1124" height="52" fill="#172554"/>
+    <text x="124" y="348" fill="#fff" font-weight="650">STM32G474RET6</text>
+    <text x="470" y="348" fill="#d1d5db" font-family="Cascadia Mono, Consolas, monospace" font-size="13">STM32G474RET6</text>
+    <text x="760" y="348" fill="#d1d5db">Cortex-M4 MCU</text>
+    <rect x="1040" y="330" width="68" height="24" rx="12" fill="#16a34a"/>
+    <text x="1074" y="346" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">Active</text>
+
+    <text x="124" y="400" fill="#fff">GRM155R71C104KA88D</text>
+    <text x="470" y="400" fill="#d1d5db" font-family="Cascadia Mono, Consolas, monospace" font-size="13">100nF</text>
+    <text x="760" y="400" fill="#d1d5db">Decoupling</text>
+    <rect x="1040" y="382" width="68" height="24" rx="12" fill="#16a34a"/>
+    <text x="1074" y="398" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">Active</text>
+    <line x1="112" y1="368" x2="1236" y2="368" stroke="#1f2937"/>
+
+    <text x="124" y="452" fill="#fff">RC0603FR-0710KL</text>
+    <text x="470" y="452" fill="#d1d5db" font-family="Cascadia Mono, Consolas, monospace" font-size="13">10k</text>
+    <text x="760" y="452" fill="#d1d5db">Pull-up</text>
+    <rect x="1040" y="434" width="68" height="24" rx="12" fill="#16a34a"/>
+    <text x="1074" y="450" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">Active</text>
+    <line x1="112" y1="420" x2="1236" y2="420" stroke="#1f2937"/>
+
+    <text x="124" y="504" fill="#fff">ATMEGA328P-AU</text>
+    <text x="470" y="504" fill="#d1d5db" font-family="Cascadia Mono, Consolas, monospace" font-size="13">ATmega328P</text>
+    <text x="760" y="504" fill="#d1d5db">Legacy MCU</text>
+    <rect x="1040" y="486" width="64" height="24" rx="12" fill="#f59e0b"/>
+    <text x="1072" y="502" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">NRND</text>
+    <line x1="112" y1="472" x2="1236" y2="472" stroke="#1f2937"/>
+
+    <text x="124" y="556" fill="#fff">BSS138</text>
+    <text x="470" y="556" fill="#d1d5db" font-family="Cascadia Mono, Consolas, monospace" font-size="13">BSS138</text>
+    <text x="760" y="556" fill="#d1d5db">Level shifter</text>
+    <rect x="1040" y="538" width="52" height="24" rx="12" fill="#f59e0b"/>
+    <text x="1066" y="554" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">LTB</text>
+    <line x1="112" y1="524" x2="1236" y2="524" stroke="#1f2937"/>
+
+    <text x="124" y="608" fill="#fff">LM1117MP-3.3</text>
+    <text x="470" y="608" fill="#d1d5db" font-family="Cascadia Mono, Consolas, monospace" font-size="13">3.3V</text>
+    <text x="760" y="608" fill="#d1d5db">LDO</text>
+    <rect x="1040" y="590" width="52" height="24" rx="12" fill="#dc2626"/>
+    <text x="1066" y="606" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">EoL</text>
+    <line x1="112" y1="576" x2="1236" y2="576" stroke="#1f2937"/>
+    <line x1="112" y1="628" x2="1236" y2="628" stroke="#1f2937"/>
+  </g>
+
+  <text x="124" y="668" fill="#9ca3af" font-size="13">Rows per page</text>
+  <text x="230" y="668" fill="#e5e7eb" font-size="13">10</text>
+  <text x="1080" y="668" fill="#9ca3af" font-size="13">1 - 6 of 86</text>
+</svg>

@@ -1,0 +1,77 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>{{ item.name }}</h1>
+  <div class="spacer"></div>
+  <span class="badge mr-2" [class.badge-muted]="!item.partId">{{ item.partId ? 'Catalog' : 'Manual' }}</span>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <div class="grid grid-cols-1 gap-4 pt-2 lg:grid-cols-[auto_minmax(0,1fr)]">
+    @if (imageUrl) {
+      <product-image
+        [fetchUrl]="imageUrl"
+        [alt]="item.name"
+      ></product-image>
+    }
+
+    <section class="dialog-section mb-0">
+      <h3 class="panel-title mb-3">Stock</h3>
+      <dl class="space-y-2 text-sm">
+        <div class="flex justify-between gap-4">
+          <dt class="text-gray-400">Value</dt>
+          <dd class="m-0 font-mono text-white">{{ item.value || '—' }}</dd>
+        </div>
+        <div class="flex justify-between gap-4">
+          <dt class="text-gray-400">Quantity</dt>
+          <dd class="m-0 font-mono text-white">{{ item.quantity }}</dd>
+        </div>
+        <div class="flex justify-between gap-4">
+          <dt class="text-gray-400">Location</dt>
+          <dd class="m-0 text-white">{{ item.locations || '—' }}</dd>
+        </div>
+        @if (item.updatedAt) {
+          <div class="flex justify-between gap-4">
+            <dt class="text-gray-400">Updated</dt>
+            <dd class="m-0 text-white">{{ item.updatedAt | date:'medium' }}</dd>
+          </div>
+        }
+      </dl>
+    </section>
+  </div>
+
+  <section class="dialog-section mt-4 mb-0">
+    <h3 class="panel-title mb-3">Note</h3>
+    <p class="m-0 text-gray-300">{{ item.comment || 'No note recorded for this stock item.' }}</p>
+  </section>
+
+  <section class="dialog-section mt-4 mb-0">
+    <h3 class="panel-title mb-3">Batches</h3>
+    @if (item.batches.length) {
+      <div class="flex flex-col gap-2">
+        @for (batch of item.batches; track batch) {
+          <div
+            class="flex flex-wrap items-center justify-between gap-3 text-sm"
+            >
+            <span class="badge" [class.badge-muted]="batch.name === 'Empty'">{{ batch.name }}</span>
+            <span class="font-mono text-white">{{ batch.quantity }}</span>
+            <span class="min-w-0 flex-1 text-right text-gray-300">{{ batch.location || '—' }}</span>
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="m-0 text-sm text-gray-400">No batches recorded.</p>
+    }
+  </section>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button type="button" class="btn-outline" (click)="close()">Close</button>
+  @if (auth.canWriteWarehouse()) {
+    <button type="button" class="btn-primary" (click)="edit()">
+      <mat-icon class="icon-16" fontSet="material-icons-outlined">edit</mat-icon>
+      <span>Edit</span>
+    </button>
+  }
+</mat-dialog-actions>

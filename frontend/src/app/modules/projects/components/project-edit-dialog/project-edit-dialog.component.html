@@ -1,0 +1,54 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>Edit project</h1>
+  <div class="spacer"></div>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <div class="dialog-grid">
+    <mat-form-field appearance="fill" class="dialog-grid-full">
+      <mat-label>Name</mat-label>
+      <input matInput [(ngModel)]="name" required />
+    </mat-form-field>
+    <mat-form-field appearance="fill" class="dialog-grid-full">
+      <mat-label>Description</mat-label>
+      <textarea matInput rows="3" [(ngModel)]="description"></textarea>
+    </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Status</mat-label>
+      <select matNativeControl [(ngModel)]="status">
+        <option value="development">In development</option>
+        <option value="released">Released</option>
+        <option value="obsolete">Obsolete</option>
+      </select>
+    </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Customer</mat-label>
+      <input matInput [(ngModel)]="customer" />
+    </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Owner</mat-label>
+      <select matNativeControl [(ngModel)]="ownerUserId">
+        <option [ngValue]="null">No owner</option>
+        @for (user of users; track user) {
+          <option [ngValue]="user.id">{{ user.username }}</option>
+        }
+      </select>
+    </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Export scope</mat-label>
+      <select matNativeControl [(ngModel)]="exportScope">
+        <option value="project_dir">Project directory</option>
+        <option value="repository">Whole repository</option>
+      </select>
+    </mat-form-field>
+  </div>
+  <p class="mt-2 text-sm text-gray-400">Project file: {{ data.project.projectFile || '—' }}</p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button type="button" class="btn-outline" (click)="close()">Cancel</button>
+  <button type="button" class="btn-primary" (click)="confirm()" [disabled]="!name.trim()">Save</button>
+</mat-dialog-actions>

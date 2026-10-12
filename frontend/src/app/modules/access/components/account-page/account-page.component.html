@@ -1,0 +1,164 @@
+<app-header
+  icon="key"
+  pageTitle="My Account"
+  subtitle="API tokens identify the KiComLib client and carry this account's rights"
+  >
+</app-header>
+
+<div class="page-container space-y-6">
+  @if (auth.profile().mustChangePassword) {
+    <p class="surface-panel p-4 text-amber-200">
+      The installed default password is still in use. Choose a new password of at least 12 characters before using the library.
+    </p>
+  }
+  @if (error) {
+    <p class="surface-panel p-4 text-red-400">{{ error }}</p>
+  }
+  @if (message) {
+    <p class="surface-panel p-4 text-green-400">{{ message }}</p>
+  }
+
+  <section class="surface-panel p-6">
+    <h2 class="panel-title mb-3">{{ auth.profile().username }}</h2>
+    <dl class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2 xl:grid-cols-5">
+      <div>
+        <dt class="text-gray-400">Account</dt>
+        <dd class="m-0 text-white">{{ auth.profile().source === 'directory' ? 'Directory' : 'Local' }}</dd>
+      </div>
+      <div>
+        <dt class="text-gray-400">Groups</dt>
+        <dd class="m-0 text-white">{{ groupNames() }}</dd>
+      </div>
+      <div>
+        <dt class="text-gray-400">Catalog</dt>
+        <dd class="m-0 text-white">{{ auth.profile().canWrite ? 'Read and write' : (auth.profile().canRead ? 'Read only' : 'No catalog access') }}</dd>
+      </div>
+      <div>
+        <dt class="text-gray-400">Warehouse</dt>
+        <dd class="m-0 text-white">{{ auth.canWriteWarehouse() ? 'Read and write' : (auth.canReadWarehouse() ? 'Read only' : 'No warehouse access') }}</dd>
+      </div>
+      <div>
+        <dt class="text-gray-400">Administration</dt>
+        <dd class="m-0 text-white">{{ auth.profile().isAdmin ? 'Can manage users, groups and settings' : 'No' }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  @if (!auth.profile().mustChangePassword) {
+    <section class="surface-panel p-6">
+      <h2 class="panel-title mb-3">API tokens</h2>
+      <p class="mb-4 text-sm text-gray-400">
+        Paste a token into the KiComLib plugin setting “API user token”. The client sends it on every request and can ask the server which rights it has.
+        The secret is shown only once. A token expires 90 days after it is created.
+      </p>
+      <div class="mb-4 flex flex-col gap-3">
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <input class="input-dark" placeholder="Token name, for example Workstation" [(ngModel)]="tokenName" />
+          <button type="button" class="btn-primary shrink-0" (click)="createToken()" [disabled]="!tokenName.trim()">Create token</button>
+        </div>
+        <label class="flex items-center gap-2 text-sm text-gray-300">
+          <input type="checkbox" [(ngModel)]="tokenCanWrite" [disabled]="!auth.canWrite()" />
+          <span>Allow write</span>
+        </label>
+        @if (auth.canWrite()) {
+          <p class="m-0 text-sm text-gray-400">A token can read the catalog, or read and change it. It cannot exceed this account's rights. Without write permission it also cannot change the warehouse.</p>
+        }
+        @if (!auth.canWrite()) {
+          <p class="m-0 text-sm text-gray-400">This account can only create tokens that do not change the catalog or the warehouse.</p>
+        }
+      </div>
+      @if (createdToken) {
+        <div class="mb-4 rounded-md border border-blue-800 bg-blue-950/40 p-4">
+          <p class="mb-2 text-sm text-gray-300">Copy this token now. It cannot be shown again.</p>
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <code class="input-dark flex items-center overflow-x-auto">{{ createdToken }}</code>
+            <button type="button" class="btn-outline shrink-0" (click)="copyToken()">Copy</button>
+          </div>
+        </div>
+      }
+      @if (isLoadingTokens) {
+        <div class="text-sm text-gray-400">Loading tokens…</div>
+      }
+      @if (!isLoadingTokens) {
+        <table mat-table [dataSource]="tokens">
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef> Name </th>
+            <td mat-cell *matCellDef="let row"> {{ row.name }} </td>
+          </ng-container>
+          <ng-container matColumnDef="prefix">
+            <th mat-header-cell *matHeaderCellDef> Prefix </th>
+            <td mat-cell *matCellDef="let row" class="mono-cell"> {{ row.prefix }}… </td>
+          </ng-container>
+          <ng-container matColumnDef="access">
+            <th mat-header-cell *matHeaderCellDef> Access </th>
+            <td mat-cell *matCellDef="let row"> {{ row.canWrite ? 'Read and write' : 'Read only' }} </td>
+          </ng-container>
+          <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef> Created </th>
+            <td mat-cell *matCellDef="let row" class="mono-cell"> {{ row.createdAt | date:'medium' }} </td>
+          </ng-container>
+          <ng-container matColumnDef="expiresAt">
+            <th mat-header-cell *matHeaderCellDef> Expires </th>
+            <td mat-cell *matCellDef="let row" class="mono-cell"> {{ row.expiresAt ? (row.expiresAt | date:'medium') : '—' }} </td>
+          </ng-container>
+          <ng-container matColumnDef="lastUsedAt">
+            <th mat-header-cell *matHeaderCellDef> Last used </th>
+            <td mat-cell *matCellDef="let row" class="mono-cell"> {{ row.lastUsedAt ? (row.lastUsedAt | date:'medium') : '—' }} </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="actions_column"> </th>
+            <td mat-cell *matCellDef="let row" class="actions_column">
+              <button type="button" class="btn-outline" (click)="revoke(row)">Revoke</button>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+        </table>
+      }
+      @if (!isLoadingTokens && !tokens.length) {
+        <p class="mt-4 text-sm text-gray-400">No API tokens yet.</p>
+      }
+    </section>
+  }
+
+  @if (auth.profile().source === 'directory') {
+    <section class="surface-panel p-6">
+      <h2 class="panel-title mb-3">Password</h2>
+      <p class="m-0 text-sm text-gray-400">This account uses the directory password. Change it there.</p>
+    </section>
+  }
+
+  @if (auth.profile().source !== 'directory') {
+    <section class="surface-panel p-6">
+      <h2 class="panel-title mb-3">Password</h2>
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <label class="block text-sm md:col-span-2">
+          <span class="mb-1 block text-gray-400">Current password</span>
+          <input class="input-dark" type="password" [(ngModel)]="currentPassword" autocomplete="current-password" />
+        </label>
+        <label class="block text-sm">
+          <span class="mb-1 block text-gray-400">New password (at least 12 characters)</span>
+          <input class="input-dark" type="password" [(ngModel)]="newPassword" autocomplete="new-password" />
+        </label>
+        <label class="block text-sm">
+          <span class="mb-1 block text-gray-400">Confirm new password</span>
+          <input class="input-dark" type="password" [(ngModel)]="confirmPassword" autocomplete="new-password" />
+        </label>
+      </div>
+      @if (isInstalledDefault()) {
+        <p class="mt-3 text-sm text-red-400">kicomlib is the installed default password and cannot be used.</p>
+      }
+      @if (confirmPassword && newPassword !== confirmPassword) {
+        <p class="mt-3 text-sm text-red-400">The new passwords do not match.</p>
+      }
+      <button
+        type="button"
+        class="btn-primary mt-4"
+        (click)="changePassword()"
+        [disabled]="!currentPassword || !passwordsMatch()"
+        >
+        Change password
+      </button>
+    </section>
+  }
+</div>

@@ -1,0 +1,17 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>Datasheet</h1>
+  <div class="spacer"></div>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="skip()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <p class="m-0 text-gray-300">Download this datasheet and link it to the part?</p>
+  <p class="m-0 mt-3 break-all font-mono text-sm text-gray-400">{{ data.label }}</p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button type="button" class="btn-outline" (click)="skip()">Skip</button>
+  <button type="button" class="btn-primary" (click)="download()">Download</button>
+</mat-dialog-actions>

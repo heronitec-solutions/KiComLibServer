@@ -1,0 +1,172 @@
+<app-header
+  icon="business"
+  pageTitle="Manufacturers"
+  subtitle="Manage component manufacturers and their details"
+  >
+  @if (auth.canWrite()) {
+    <button type="button" class="btn-primary" (click)="addEntry()">
+      <mat-icon class="icon-16" fontSet="material-icons-outlined">add</mat-icon>
+      <span>Add Manufacturer</span>
+    </button>
+  }
+</app-header>
+
+<div class="page-container">
+  <div class="surface-panel mb-6 p-6">
+    <div class="mb-4 flex items-center gap-2">
+      <mat-icon class="icon-20 text-gray-400" fontSet="material-icons-outlined">filter_list</mat-icon>
+      <h3 class="panel-title">Search &amp; Filter</h3>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div class="relative">
+        <mat-icon
+          class="icon-16 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          fontSet="material-icons-outlined"
+        >search</mat-icon>
+        <input
+          type="text"
+          class="input-dark pl-10"
+          placeholder="Search manufacturers..."
+          [ngModel]="filter.search"
+          (ngModelChange)="onSearchChange($event)"
+          />
+        </div>
+
+        @if (hasActiveFilters) {
+          <button type="button" class="btn-outline" (click)="clearFilters()">
+            <mat-icon class="icon-16" fontSet="material-icons-outlined">close</mat-icon>
+            <span>Clear Filters</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="surface-panel overflow-hidden">
+      <table
+        mat-table
+        matSort
+        matSortActive="id"
+        matSortDirection="asc"
+        matSortDisableClear
+        [dataSource]="dataSource"
+        (matSortChange)="sortData($event)"
+        >
+        <!-- ID Column -->
+        <ng-container matColumnDef="id">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="tiny_column"> ID </th>
+          <td mat-cell *matCellDef="let row" class="tiny_column"> {{row.id}} </td>
+        </ng-container>
+
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> Name </th>
+          <td mat-cell *matCellDef="let row"> {{row.name}} </td>
+        </ng-container>
+
+        <!-- URL Column -->
+        <ng-container matColumnDef="url">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> URL </th>
+          <td mat-cell *matCellDef="let row">
+            @if (row.url) {
+              <a
+                [href]="row.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300"
+                >
+                <span class="truncate">{{row.url}}</span>
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">open_in_new</mat-icon>
+              </a>
+            } @else {
+              <span class="text-gray-500">&ndash;</span>
+            }
+          </td>
+        </ng-container>
+
+        <!-- TrustedParts API ID Column -->
+        <ng-container matColumnDef="trustedPartsId">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header> TrustedParts ID </th>
+          <td mat-cell *matCellDef="let row">
+            @if (row.trustedPartsId) {
+              <span>{{row.trustedPartsId}}</span>
+            } @else {
+              <span class="text-gray-500">&ndash;</span>
+            }
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="actions_column"> Actions </th>
+          <td mat-cell *matCellDef="let row" class="actions_column">
+            <div class="flex space-x-1">
+              <button
+                type="button"
+                class="btn-icon text-blue-400 hover:text-blue-300"
+                aria-label="Revision history"
+                (click)="openHistory(row, $event)"
+                >
+                <mat-icon class="icon-16" fontSet="material-icons-outlined">history</mat-icon>
+              </button>
+              @if (auth.canWrite()) {
+                <button
+                  type="button"
+                  class="btn-icon text-yellow-400 hover:text-yellow-300"
+                  aria-label="Edit manufacturer"
+                  (click)="editRow(row)"
+                  >
+                  <mat-icon class="icon-16" fontSet="material-icons-outlined">edit</mat-icon>
+                </button>
+              }
+              @if (auth.canWrite()) {
+                <button
+                  type="button"
+                  class="btn-icon text-red-400 hover:text-red-300"
+                  aria-label="Delete manufacturer"
+                  (click)="deleteRow(row)"
+                  >
+                  <mat-icon class="icon-16" fontSet="material-icons-outlined">delete_forever</mat-icon>
+                </button>
+              }
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: displayedColumns;"
+          class="cursor-pointer"
+          tabindex="0"
+          (click)="onRowClick(row, $event)"
+          (keydown.enter)="onRowClick(row, $event)"
+        ></tr>
+      </table>
+
+      <mat-paginator
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        [pageSize]="25"
+        showFirstLastButtons
+        aria-label="Select page of manufacturers"
+      ></mat-paginator>
+    </div>
+
+    @if ((dataSource.filteredCount$ | async) === 0 && (dataSource.isLoading$ | async) === false) {
+      <div class="surface-panel mt-6 py-12 text-center">
+        <mat-icon class="icon-48 mx-auto mb-4 text-gray-600" fontSet="material-icons-outlined">business</mat-icon>
+        <h3 class="mb-2 text-lg font-medium text-white">No manufacturers found</h3>
+        <p class="mb-6 text-gray-400">
+          {{ hasActiveFilters
+          ? 'Try adjusting your search or filters'
+          : 'Get started by adding your first manufacturer' }}
+        </p>
+        @if (auth.canWrite() && !hasActiveFilters) {
+          <button type="button" class="btn-primary" (click)="addEntry()">
+            <mat-icon class="icon-16" fontSet="material-icons-outlined">add</mat-icon>
+            <span>Add Manufacturer</span>
+          </button>
+        }
+      </div>
+    }
+  </div>

@@ -1,0 +1,181 @@
+<app-header
+  icon="developer_board"
+  [pageTitle]="project?.name || 'Project'"
+  [subtitle]="project?.projectFile || 'KiCad project'"
+  >
+  <a class="btn-outline" routerLink="/projects">All projects</a>
+  @if (project) {
+    <a
+      class="btn-outline"
+      [routerLink]="['/projects', project.id, 'diff']"
+      [queryParams]="{ target: selectedSha || project.headSha }"
+    >Visual diff</a>
+  }
+  @if (project?.permissions?.canWrite) {
+    <button type="button" class="btn-primary" (click)="edit()">Edit</button>
+  }
+  @if (project?.permissions?.canAdmin) {
+    <button type="button" class="btn-danger" (click)="remove()">Delete</button>
+  }
+</app-header>
+
+<div class="page-container">
+  @if (error) {
+    <p class="surface-panel mb-6 p-4 text-red-400">{{ error }}</p>
+  }
+  @if (loading) {
+    <p class="surface-panel p-6 text-gray-400">Loading project…</p>
+  }
+
+  @if (project) {
+    @if (selectedSha) {
+      <section class="surface-panel selected-revision-bar mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+        <div class="flex items-center gap-2">
+          <mat-icon class="icon-20 text-blue-400" fontSet="material-icons-outlined">history</mat-icon>
+          <span class="text-sm font-semibold text-white">Selected revision</span>
+        </div>
+        @if (selectedLabel) {
+          <span class="badge bg-blue-600 text-white">{{ selectedLabel }}</span>
+        }
+        <span class="font-mono text-sm text-white" [attr.title]="selectedSha">{{ shortSha(selectedSha) }}</span>
+        @if (selectedIsHead) {
+          <span class="badge badge-muted">Head</span>
+        }
+        @if (selectedRef) {
+          <span class="text-sm text-gray-300">{{ selectedRef }}</span>
+        }
+        @if (selectedRevision?.message) {
+          <span
+            class="min-w-0 flex-1 truncate text-sm text-gray-400"
+            [attr.title]="selectedRevision?.message"
+          >{{ selectedRevision?.message }}</span>
+        }
+        @if (selectedRevision?.authorName) {
+          <span class="text-sm text-gray-400">
+            {{ selectedRevision?.authorName }}@if (selectedRevision?.committedAt) {
+            <span> · {{ $safeNavigationMigration(selectedRevision?.committedAt) | date:'medium' }}</span>
+          }
+        </span>
+      }
+    </section>
+  }
+  <mat-tab-group>
+    <mat-tab label="Overview">
+      <div class="grid grid-cols-1 gap-4 pt-4 lg:grid-cols-2">
+        <section class="surface-panel p-6">
+          <h2 class="panel-title mb-3">Project</h2>
+          <dl class="space-y-2 text-sm">
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-400">Status</dt>
+              <dd class="m-0"><span class="badge" [ngClass]="statusClass(project.status)">{{ statusLabel(project.status) }}</span></dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-400">Customer</dt>
+              <dd class="m-0 text-white">{{ project.customer || '—' }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-400">Owner</dt>
+              <dd class="m-0 text-white">{{ project.ownerName || '—' }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-400">Head</dt>
+              <dd class="m-0 font-mono text-white">{{ project.headSha || '—' }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-400">Components</dt>
+              <dd class="m-0 text-white">{{ project.headComponentCount }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-400">Revisions</dt>
+              <dd class="m-0 text-white">{{ project.revisionCount }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt class="text-gray-400">Warnings</dt>
+              <dd class="m-0 text-white">{{ project.warningCount }}</dd>
+            </div>
+          </dl>
+        </section>
+        <section class="surface-panel space-y-3 p-6">
+          <h2 class="panel-title">Repository</h2>
+          <p class="m-0 text-sm text-gray-300">{{ project.description || 'No description.' }}</p>
+          <p class="m-0 text-sm text-gray-400">File {{ project.projectFile || '—' }}</p>
+          <p class="m-0 text-sm text-gray-400">
+            Export scope {{ project.exportScope === 'repository' ? 'Whole repository' : 'Project directory' }}
+          </p>
+          @if (project.defaultBranch) {
+            <p class="m-0 text-sm text-gray-400">Default branch {{ project.defaultBranch }}</p>
+          }
+          @if (project.webUrl) {
+            <a
+              class="inline-flex text-sm text-blue-400 hover:text-blue-300"
+              [href]="project.webUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+            >Open in Git host</a>
+          }
+          @if (project.warnings.length) {
+            <div class="text-sm text-yellow-200">
+              @for (warning of project.warnings; track warning) {
+                <p class="m-0">{{ warning }}</p>
+              }
+            </div>
+          }
+        </section>
+      </div>
+    </mat-tab>
+    <mat-tab label="Revisions">
+      <div class="pt-4">
+        <revision-table
+          [projectId]="project.id"
+          [canWrite]="project.permissions.canWrite"
+          [selectedSha]="selectedSha"
+          (selected)="onRevision($event)"
+        ></revision-table>
+      </div>
+    </mat-tab>
+    <mat-tab label="Schematic">
+      <div class="space-y-4 pt-4">
+        <schematic-view [projectId]="project.id" [sha]="selectedSha"></schematic-view>
+      </div>
+    </mat-tab>
+    <mat-tab label="BOM">
+      <div class="pt-4">
+        <bom-table [projectId]="project.id" [sha]="selectedSha"></bom-table>
+      </div>
+    </mat-tab>
+    <mat-tab label="Changes">
+      <div class="pt-4">
+        <bom-diff [projectId]="project.id"></bom-diff>
+      </div>
+    </mat-tab>
+    <mat-tab label="Access">
+      <div class="space-y-4 pt-4">
+        @if (accessError) {
+          <p class="m-0 text-sm text-red-400">{{ accessError }}</p>
+        }
+        @if (!project.permissions.canAdmin) {
+          <p class="m-0 text-sm text-gray-400">
+            Project access is managed by an administrator.
+          </p>
+        }
+        @if (project.permissions.canAdmin) {
+          <div>
+            <button type="button" class="btn-primary mb-4" (click)="editAccess()">Edit access</button>
+            <ul class="m-0 list-none space-y-2 p-0">
+              @for (entry of accessEntries; track entry) {
+                <li class="surface-panel flex items-center justify-between p-4 text-sm">
+                  <span>{{ entry.groupName || ('Group #' + entry.groupId) }}</span>
+                  <span class="badge badge-muted">{{ entry.canWrite ? 'Read and write' : 'Read' }}</span>
+                </li>
+              }
+            </ul>
+            @if (!accessEntries.length) {
+              <p class="text-sm text-gray-400">No group has been granted access yet.</p>
+            }
+          </div>
+        }
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+}
+</div>

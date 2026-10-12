@@ -1,0 +1,23 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>{{ data.title }}</h1>
+  <div class="spacer"></div>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <p class="m-0 text-gray-300">{{ data.message }}</p>
+  @if (data.askPassphrase) {
+    <label class="mt-4 block text-sm text-gray-400">
+      Backup passphrase
+      <input class="input-dark mt-2 w-full" type="password" name="backup-restore-passphrase" autocomplete="off" [(ngModel)]="passphrase" />
+    </label>
+    <p class="mt-2 mb-0 text-sm text-gray-500">At least 12 characters. This is the passphrase chosen when the backup was created.</p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button type="button" class="btn-outline" (click)="close()">Cancel</button>
+  <button type="button" [class]="data.danger ? 'btn-danger' : 'btn-primary'" (click)="confirm()" [disabled]="confirmDisabled">{{ data.confirmLabel }}</button>
+</mat-dialog-actions>

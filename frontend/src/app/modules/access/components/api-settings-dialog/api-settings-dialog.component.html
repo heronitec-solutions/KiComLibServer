@@ -1,0 +1,286 @@
+<div class="dialog-header">
+  <h1 mat-dialog-title cdk-focus-start>{{ data.adding ? 'Add ' + provider.label : provider.label }}</h1>
+  <div class="spacer"></div>
+  <button type="button" class="btn-icon text-gray-400 hover:text-white" aria-label="Close" (click)="close()" [disabled]="isSaving">
+    <mat-icon class="icon-20" fontSet="material-icons-outlined">close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content>
+  <p class="mb-4 text-sm text-gray-400">
+    {{ provider.lead }}
+    <a class="text-blue-400 hover:text-blue-300" [href]="provider.docsUrl" target="_blank" rel="noopener noreferrer">{{ provider.docsLabel }}</a>.
+    {{ provider.tail }}
+  </p>
+
+  @if (error) {
+    <p class="mb-4 text-sm text-red-400">{{ error }}</p>
+  }
+  @if (testMessage) {
+    <p class="mb-4 text-sm text-green-400">{{ testMessage }}</p>
+  }
+
+  @if (provider.id === 'trustedparts') {
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <label class="flex flex-col gap-1 text-sm text-gray-300">
+        Company ID
+        <input class="input-dark" [(ngModel)]="companyId" [disabled]="isSaving || isTesting" autocomplete="off" />
+      </label>
+      <div class="flex flex-col gap-2">
+        <label class="flex flex-col gap-1 text-sm text-gray-300">
+          API key
+          <input
+            class="input-dark"
+            type="password"
+            [(ngModel)]="apiKey"
+            [disabled]="isSaving || isTesting || clearApiKey"
+            autocomplete="new-password"
+            [placeholder]="apiKeySet ? 'Saved key is kept if empty' : ''"
+            />
+          </label>
+          <div>
+            @if (apiKeySet) {
+              <button type="button" class="btn-outline" (click)="requestTrustedPartsClear()" [disabled]="isSaving || isTesting">
+                {{ clearApiKey ? 'Keep saved key' : 'Remove saved key' }}
+              </button>
+            }
+          </div>
+        </div>
+        @if (clearApiKey) {
+          <p class="m-0 text-sm text-yellow-300 md:col-span-2">
+            The saved key will be removed when you remove this API.
+          </p>
+        }
+      </div>
+    }
+
+    @if (provider.id === 'mouser') {
+      <div class="grid grid-cols-1 gap-4">
+        <div class="flex max-w-md flex-col gap-2">
+          <label class="flex flex-col gap-1 text-sm text-gray-300">
+            API key
+            <input
+              class="input-dark"
+              type="password"
+              [(ngModel)]="mouserApiKey"
+              [disabled]="isSaving || isTesting || mouserClearApiKey"
+              autocomplete="new-password"
+              [placeholder]="mouserApiKeySet ? 'Saved key is kept if empty' : ''"
+              />
+            </label>
+            <div>
+              @if (mouserApiKeySet) {
+                <button type="button" class="btn-outline" (click)="requestMouserClear()" [disabled]="isSaving || isTesting">
+                  {{ mouserClearApiKey ? 'Keep saved key' : 'Remove saved key' }}
+                </button>
+              }
+            </div>
+          </div>
+          @if (mouserClearApiKey) {
+            <p class="m-0 text-sm text-yellow-300">
+              The saved key will be removed when you remove this API.
+            </p>
+          }
+        </div>
+      }
+
+      @if (provider.id === 'digikey') {
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label class="flex flex-col gap-1 text-sm text-gray-300">
+            Client ID
+            <input class="input-dark" [(ngModel)]="digikeyClientId" [disabled]="isSaving || isTesting" autocomplete="off" />
+          </label>
+          <div class="flex flex-col gap-2">
+            <label class="flex flex-col gap-1 text-sm text-gray-300">
+              Client secret
+              <input
+                class="input-dark"
+                type="password"
+                [(ngModel)]="digikeyClientSecret"
+                [disabled]="isSaving || isTesting || digikeyClearClientSecret"
+                autocomplete="new-password"
+                [placeholder]="digikeyClientSecretSet ? 'Saved secret is kept if empty' : ''"
+                />
+              </label>
+              <div>
+                @if (digikeyClientSecretSet) {
+                  <button type="button" class="btn-outline" (click)="requestDigiKeyClear()" [disabled]="isSaving || isTesting">
+                    {{ digikeyClearClientSecret ? 'Keep saved secret' : 'Remove saved secret' }}
+                  </button>
+                }
+              </div>
+            </div>
+            <label class="flex flex-col gap-1 text-sm text-gray-300">
+              Locale
+              <input class="input-dark" [(ngModel)]="digikeyLocale" [disabled]="isSaving || isTesting" autocomplete="off" placeholder="en" />
+            </label>
+            @if (digikeyClearClientSecret) {
+              <p class="m-0 text-sm text-yellow-300 md:col-span-2">
+                The saved secret will be removed when you remove this API.
+              </p>
+            }
+          </div>
+        }
+
+        @if (provider.id === 'farnell') {
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="flex flex-col gap-2">
+              <label class="flex flex-col gap-1 text-sm text-gray-300">
+                API key
+                <input
+                  class="input-dark"
+                  type="password"
+                  [(ngModel)]="farnellApiKey"
+                  [disabled]="isSaving || isTesting || farnellClearApiKey"
+                  autocomplete="new-password"
+                  [placeholder]="farnellApiKeySet ? 'Saved key is kept if empty' : ''"
+                  />
+                </label>
+                <div>
+                  @if (farnellApiKeySet) {
+                    <button type="button" class="btn-outline" (click)="requestFarnellClear()" [disabled]="isSaving || isTesting">
+                      {{ farnellClearApiKey ? 'Keep saved key' : 'Remove saved key' }}
+                    </button>
+                  }
+                </div>
+              </div>
+              <label class="flex flex-col gap-1 text-sm text-gray-300">
+                Store
+                <select class="input-dark" [(ngModel)]="farnellStore" [disabled]="isSaving || isTesting">
+                  @for (store of farnellStores; track store) {
+                    <option [value]="store">{{ store }}</option>
+                  }
+                </select>
+              </label>
+              @if (farnellClearApiKey) {
+                <p class="m-0 text-sm text-yellow-300 md:col-span-2">
+                  The saved key will be removed when you remove this API.
+                </p>
+              }
+            </div>
+          }
+
+          @if (provider.id === 'arrow') {
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <label class="flex flex-col gap-1 text-sm text-gray-300">
+                Login
+                <input class="input-dark" [(ngModel)]="arrowLogin" [disabled]="isSaving || isTesting" autocomplete="off" />
+              </label>
+              <div class="flex flex-col gap-2">
+                <label class="flex flex-col gap-1 text-sm text-gray-300">
+                  API key
+                  <input
+                    class="input-dark"
+                    type="password"
+                    [(ngModel)]="arrowApiKey"
+                    [disabled]="isSaving || isTesting || arrowClearApiKey"
+                    autocomplete="new-password"
+                    [placeholder]="arrowApiKeySet ? 'Saved key is kept if empty' : ''"
+                    />
+                  </label>
+                  <div>
+                    @if (arrowApiKeySet) {
+                      <button type="button" class="btn-outline" (click)="requestArrowClear()" [disabled]="isSaving || isTesting">
+                        {{ arrowClearApiKey ? 'Keep saved key' : 'Remove saved key' }}
+                      </button>
+                    }
+                  </div>
+                </div>
+                @if (arrowClearApiKey) {
+                  <p class="m-0 text-sm text-yellow-300 md:col-span-2">
+                    The saved key will be removed when you remove this API.
+                  </p>
+                }
+              </div>
+            }
+
+            @if (provider.id === 'tme') {
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div class="flex flex-col gap-2">
+                  <label class="flex flex-col gap-1 text-sm text-gray-300">
+                    Token
+                    <input
+                      class="input-dark"
+                      type="password"
+                      [(ngModel)]="tmeToken"
+                      [disabled]="isSaving || isTesting || tmeClearToken"
+                      autocomplete="new-password"
+                      [placeholder]="tmeTokenSet ? 'Saved token is kept if empty' : ''"
+                      />
+                    </label>
+                    <div>
+                      @if (tmeTokenSet) {
+                        <button type="button" class="btn-outline" (click)="requestTmeTokenClear()" [disabled]="isSaving || isTesting">
+                          {{ tmeClearToken ? 'Keep saved token' : 'Remove saved token' }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+                  <div class="flex flex-col gap-2">
+                    <label class="flex flex-col gap-1 text-sm text-gray-300">
+                      App secret
+                      <input
+                        class="input-dark"
+                        type="password"
+                        [(ngModel)]="tmeAppSecret"
+                        [disabled]="isSaving || isTesting || tmeClearAppSecret"
+                        autocomplete="new-password"
+                        [placeholder]="tmeAppSecretSet ? 'Saved secret is kept if empty' : ''"
+                        />
+                      </label>
+                      <div>
+                        @if (tmeAppSecretSet) {
+                          <button type="button" class="btn-outline" (click)="requestTmeSecretClear()" [disabled]="isSaving || isTesting">
+                            {{ tmeClearAppSecret ? 'Keep saved secret' : 'Remove saved secret' }}
+                          </button>
+                        }
+                      </div>
+                    </div>
+                    <label class="flex flex-col gap-1 text-sm text-gray-300">
+                      Country
+                      <input class="input-dark" [(ngModel)]="tmeCountry" [disabled]="isSaving || isTesting" autocomplete="off" placeholder="DE" />
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm text-gray-300">
+                      Language
+                      <input class="input-dark" [(ngModel)]="tmeLanguage" [disabled]="isSaving || isTesting" autocomplete="off" placeholder="EN" />
+                    </label>
+                    @if (tmeClearToken) {
+                      <p class="m-0 text-sm text-yellow-300 md:col-span-2">
+                        The saved token will be removed when you remove this API.
+                      </p>
+                    }
+                    @if (tmeClearAppSecret) {
+                      <p class="m-0 text-sm text-yellow-300 md:col-span-2">
+                        The saved app secret will be removed when you remove this API.
+                      </p>
+                    }
+                  </div>
+                }
+              </mat-dialog-content>
+
+              <mat-dialog-actions>
+                @if (!data.adding) {
+                  <button type="button" class="btn-danger" (click)="remove()" [disabled]="isSaving || isTesting">
+                    Remove
+                  </button>
+                }
+                <div class="spacer"></div>
+                @if (provider.kind === 'distributor') {
+                  <button
+                    type="button"
+                    class="btn-outline"
+                    (click)="test()"
+                    [disabled]="isSaving || isTesting"
+                    [attr.aria-busy]="isTesting"
+                    >
+                    @if (isTesting) {
+                      <span class="busy-spinner" aria-hidden="true"></span>
+                    }
+                    <span>{{ isTesting ? 'Testing…' : 'Test connection' }}</span>
+                  </button>
+                }
+                <button type="button" class="btn-outline" (click)="close()" [disabled]="isSaving">Cancel</button>
+                <button type="button" class="btn-primary" (click)="save()" [disabled]="isSaving || isTesting">
+                  {{ isSaving ? 'Saving…' : 'Save' }}
+                </button>
+              </mat-dialog-actions>

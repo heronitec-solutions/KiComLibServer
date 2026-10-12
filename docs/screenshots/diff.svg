@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <title>KiComLib Visual Diff</title>
+  <rect width="1280" height="800" fill="#030712"/>
+  <rect width="72" height="800" fill="#111827"/>
+  <line x1="72" y1="0" x2="72" y2="800" stroke="#1f2937"/>
+  <g transform="translate(16,18)">
+    <rect width="40" height="8" rx="2" fill="#4667db"/>
+    <rect y="14" width="40" height="8" rx="2" fill="#4667db"/>
+    <rect y="28" width="40" height="8" rx="2" fill="#4667db"/>
+    <circle cx="34" cy="32" r="9" fill="#ffa350"/>
+  </g>
+  <g fill="none" stroke="#9ca3af" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(24,88)"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M7 6V4h10v2"/></g>
+    <g transform="translate(16,184)"><rect width="40" height="40" rx="8" fill="#1f2937" stroke="none"/><g transform="translate(8,8)" stroke="#fff"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M8 13h8"/></g></g>
+  </g>
+
+  <rect x="72" y="0" width="1208" height="84" fill="#111827"/>
+  <line x1="72" y1="84" x2="1280" y2="84" stroke="#1f2937"/>
+  <text x="104" y="40" fill="#fff" font-size="26" font-weight="700">Visual diff</text>
+  <text x="104" y="64" fill="#9ca3af" font-size="14">Schematic and board changes between two revisions</text>
+  <rect x="1104" y="26" width="148" height="34" rx="8" fill="none" stroke="#374151"/>
+  <text x="1178" y="48" fill="#e5e7eb" font-size="13" font-weight="650" text-anchor="middle">Back to project</text>
+
+  <rect x="96" y="104" width="868" height="92" rx="10" fill="#111827" stroke="#1f2937"/>
+  <text x="116" y="132" fill="#9ca3af" font-size="12">Base</text>
+  <rect x="116" y="142" width="250" height="36" rx="8" fill="#030712" stroke="#1f2937"/>
+  <text x="128" y="165" fill="#e5e7eb" font-size="13">v1.3.0 - Release filter stage</text>
+  <text x="386" y="132" fill="#9ca3af" font-size="12">Target</text>
+  <rect x="386" y="142" width="280" height="36" rx="8" fill="#030712" stroke="#1f2937"/>
+  <text x="398" y="165" fill="#e5e7eb" font-size="13">v1.4.0 - Add input filter</text>
+  <rect x="686" y="142" width="110" height="36" rx="8" fill="#2563eb"/>
+  <text x="741" y="165" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">Compare</text>
+  <text x="812" y="165" fill="#86efac" font-size="13">Added</text>
+  <text x="880" y="165" fill="#fca5a5" font-size="13">Removed</text>
+
+  <rect x="96" y="212" width="200" height="564" rx="10" fill="#111827" stroke="#1f2937"/>
+  <text x="112" y="244" fill="#fff" font-size="15" font-weight="700">Pages</text>
+  <rect x="108" y="260" width="176" height="36" rx="8" fill="#1f2937"/>
+  <text x="120" y="283" fill="#fff" font-size="13">Power</text>
+  <rect x="230" y="268" width="28" height="20" rx="10" fill="#374151"/>
+  <text x="244" y="282" fill="#e5e7eb" font-size="11" text-anchor="middle">3</text>
+  <text x="120" y="328" fill="#d1d5db" font-size="13">Root</text>
+  <text x="120" y="364" fill="#d1d5db" font-size="13">MCU</text>
+  <text x="120" y="420" fill="#9ca3af" font-size="12" font-weight="700">Board</text>
+  <rect x="108" y="436" width="176" height="34" rx="8" fill="none" stroke="#374151"/>
+  <text x="120" y="458" fill="#e5e7eb" font-size="13">F.Cu</text>
+  <text x="120" y="502" fill="#9ca3af" font-size="13">B.Cu</text>
+
+  <g transform="translate(312,212)">
+    <rect width="640" height="564" rx="10" fill="#f8fafc" stroke="#d1d5db"/>
+    <rect x="16" y="16" width="608" height="532" fill="none" stroke="#94a3b8"/>
+
+    <g fill="none" stroke="#1e3a8a" stroke-width="2.2" stroke-linecap="square">
+      <line x1="78" y1="200" x2="130" y2="200"/>
+      <line x1="186" y1="200" x2="220" y2="200"/>
+      <line x1="340" y1="200" x2="450" y2="200"/>
+      <line x1="400" y1="96" x2="400" y2="200"/>
+      <line x1="200" y1="200" x2="200" y2="320"/>
+    </g>
+    <line x1="200" y1="332" x2="200" y2="388" stroke="#dc2626" stroke-width="2.4"/>
+    <line x1="525" y1="266" x2="525" y2="340" stroke="#16a34a" stroke-width="2.4"/>
+    <line x1="525" y1="366" x2="525" y2="418" stroke="#16a34a" stroke-width="2.4"/>
+    <circle cx="400" cy="200" r="4" fill="#1e3a8a"/>
+
+    <rect x="40" y="176" width="38" height="48" fill="#fff" stroke="#111" stroke-width="2"/>
+    <text x="59" y="166" fill="#111" font-size="14" font-weight="700" text-anchor="middle">J1</text>
+    <text x="59" y="242" fill="#334155" font-size="12" text-anchor="middle">PWR</text>
+
+    <rect x="130" y="186" width="56" height="28" rx="8" fill="#fff" stroke="#111" stroke-width="2"/>
+    <text x="158" y="176" fill="#111" font-size="14" font-weight="700" text-anchor="middle">FB1</text>
+
+    <rect x="220" y="164" width="120" height="72" fill="#fff" stroke="#111" stroke-width="2"/>
+    <text x="280" y="154" fill="#111" font-size="14" font-weight="700" text-anchor="middle">U1</text>
+    <text x="280" y="198" fill="#111" font-size="13" text-anchor="middle">AP2112K</text>
+    <text x="280" y="216" fill="#334155" font-size="12" text-anchor="middle">3.3 V</text>
+
+    <text x="400" y="84" fill="#9f1239" font-size="14" font-weight="700" text-anchor="middle">+3V3</text>
+    <line x1="372" y1="96" x2="428" y2="96" stroke="#9f1239" stroke-width="2"/>
+
+    <rect x="450" y="156" width="150" height="110" fill="#fff" stroke="#111" stroke-width="2"/>
+    <text x="525" y="206" fill="#111" font-size="15" font-weight="700" text-anchor="middle">U2</text>
+    <text x="525" y="228" fill="#334155" font-size="12" text-anchor="middle">STM32G474</text>
+    <text x="458" y="196" fill="#9f1239" font-size="11">VDD</text>
+    <text x="548" y="258" fill="#166534" font-size="11">PA0</text>
+
+    <rect x="168" y="300" width="150" height="78" rx="8" fill="#fee2e2"/>
+    <line x1="184" y1="320" x2="216" y2="320" stroke="#dc2626" stroke-width="2.4"/>
+    <line x1="184" y1="332" x2="216" y2="332" stroke="#dc2626" stroke-width="2.4"/>
+    <text x="228" y="328" fill="#b91c1c" font-size="14" font-weight="700">C4</text>
+    <text x="228" y="346" fill="#b91c1c" font-size="12">100nF</text>
+    <g stroke="#b91c1c" stroke-width="2" transform="translate(200,400)">
+      <line x1="-14" y1="0" x2="14" y2="0"/>
+      <line x1="-9" y1="6" x2="9" y2="6"/>
+      <line x1="-4" y1="12" x2="4" y2="12"/>
+    </g>
+
+    <rect x="490" y="312" width="70" height="78" rx="8" fill="#dcfce7"/>
+    <rect x="498" y="340" width="54" height="26" fill="#f0fdf4" stroke="#16a34a" stroke-width="2.4"/>
+    <text x="525" y="332" fill="#166534" font-size="13" font-weight="700" text-anchor="middle">R12</text>
+    <text x="525" y="382" fill="#166534" font-size="12" text-anchor="middle">10k</text>
+    <g stroke="#166534" stroke-width="2" transform="translate(525,430)">
+      <line x1="-14" y1="0" x2="14" y2="0"/>
+      <line x1="-9" y1="6" x2="9" y2="6"/>
+      <line x1="-4" y1="12" x2="4" y2="12"/>
+    </g>
+  </g>
+
+  <rect x="968" y="212" width="284" height="564" rx="10" fill="#111827" stroke="#1f2937"/>
+  <text x="988" y="248" fill="#fff" font-size="16" font-weight="700">Changes</text>
+
+  <text x="988" y="286" fill="#86efac" font-size="13" font-weight="700">Added</text>
+  <rect x="988" y="300" width="244" height="72" rx="8" fill="#0b1220"/>
+  <text x="1004" y="328" fill="#fff" font-family="Cascadia Mono, Consolas, monospace" font-size="14">R12</text>
+  <text x="1004" y="350" fill="#d1d5db" font-size="13">10k pulldown</text>
+  <rect x="1148" y="312" width="68" height="22" rx="11" fill="#166534"/>
+  <text x="1182" y="327" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">OK</text>
+
+  <text x="988" y="404" fill="#fca5a5" font-size="13" font-weight="700">Removed</text>
+  <rect x="988" y="418" width="244" height="72" rx="8" fill="#0b1220"/>
+  <text x="1004" y="446" fill="#fff" font-family="Cascadia Mono, Consolas, monospace" font-size="14">C4</text>
+  <text x="1004" y="468" fill="#d1d5db" font-size="13">100nF</text>
+  <rect x="1124" y="430" width="92" height="22" rx="11" fill="#991b1b"/>
+  <text x="1170" y="445" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">End of life</text>
+
+  <text x="988" y="522" fill="#fcd34d" font-size="13" font-weight="700">Changed</text>
+  <rect x="988" y="536" width="244" height="78" rx="8" fill="#0b1220"/>
+  <text x="1004" y="564" fill="#fff" font-family="Cascadia Mono, Consolas, monospace" font-size="14">U1</text>
+  <text x="1004" y="586" fill="#d1d5db" font-size="13">Value field outdated</text>
+  <rect x="1108" y="548" width="108" height="22" rx="11" fill="#374151"/>
+  <text x="1162" y="563" fill="#e5e7eb" font-size="11" font-weight="700" text-anchor="middle">Field outdated</text>
+
+  <text x="988" y="650" fill="#9ca3af" font-size="13">Moved</text>
+  <text x="988" y="674" fill="#6b7280" font-size="13">None.</text>
+</svg>

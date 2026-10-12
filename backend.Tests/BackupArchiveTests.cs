@@ -93,7 +93,7 @@ public class BackupArchiveTests
                 BackupArchive.OpenAsync(tamperedPath, Passphrase, 1024 * 1024, CancellationToken.None));
             Assert.Equal(BackupArchive.WrongPassphraseMessage, damaged.Message);
 
-            tampered[8] = 2;
+            tampered[BackupArchive.MagicText.Length] = 2;
             string versionPath = Path.Combine(directory, "version.kibkp");
             await File.WriteAllBytesAsync(versionPath, tampered);
             InvalidOperationException version = await Assert.ThrowsAsync<InvalidOperationException>(() =>

@@ -23,7 +23,7 @@ namespace KiComLibBackend.Services
 
     /// <summary>
     /// A portable backup file. The on-disk layout is little-endian:
-    /// magic "KICOMLIBBK", version uint16, PBKDF2 iterations uint32, salt 16, IV 16,
+    /// magic "KICOMLIBBK" (10 bytes), version uint16, PBKDF2 iterations uint32, salt 16, IV 16,
     /// AES-256-CBC ciphertext, HMAC-SHA256 of the header and ciphertext.
     /// The passphrase is stretched with PBKDF2-SHA256 and split with HKDF into
     /// an encryption key and a MAC key. The MAC is checked before any byte is decrypted.
@@ -37,7 +37,7 @@ namespace KiComLibBackend.Services
         public const int DefaultIterations = 600_000;
         public const int MaxIterations = 1_000_000;
         public const int MinPassphraseLength = 12;
-        public const int HeaderLength = 46;
+        public const int HeaderLength = 48;
         public const int MacLength = 32;
         public const int MaxManifestBytes = 1024 * 1024;
         public const int MaxKeyFileBytes = 1024 * 1024;
@@ -477,10 +477,10 @@ namespace KiComLibBackend.Services
         {
             byte[] header = new byte[HeaderLength];
             Encoding.ASCII.GetBytes(MagicText).CopyTo(header, 0);
-            BinaryPrimitives.WriteUInt16LittleEndian(header.AsSpan(8), FormatVersion);
-            BinaryPrimitives.WriteUInt32LittleEndian(header.AsSpan(10), (uint)iterations);
-            salt.CopyTo(header.AsSpan(14));
-            iv.CopyTo(header.AsSpan(30));
+            BinaryPrimitives.WriteUInt16LittleEndian(header.AsSpan(MagicText.Length), FormatVersion);
+            BinaryPrimitives.WriteUInt32LittleEndian(header.AsSpan(MagicText.Length + 2), (uint)iterations);
+            salt.CopyTo(header.AsSpan(MagicText.Length + 6));
+            iv.CopyTo(header.AsSpan(MagicText.Length + 22));
             return header;
         }
 
@@ -491,20 +491,20 @@ namespace KiComLibBackend.Services
                 throw new InvalidOperationException(NotBackupMessage);
             }
 
-            version = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(8));
+            version = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(MagicText.Length));
             if (version != FormatVersion)
             {
                 throw new InvalidOperationException(UnsupportedVersionMessage);
             }
 
-            iterations = (int)BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(10));
+            iterations = (int)BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(MagicText.Length + 2));
             if (iterations < 1 || iterations > MaxIterations)
             {
                 throw new InvalidOperationException(UnsupportedParametersMessage);
             }
 
-            salt = header.AsSpan(14, 16).ToArray();
-            iv = header.AsSpan(30, 16).ToArray();
+            salt = header.AsSpan(MagicText.Length + 6, 16).ToArray();
+            iv = header.AsSpan(MagicText.Length + 22, 16).ToArray();
         }
 
         private static DerivedKeys DeriveKeys(string passphrase, byte[] salt, int iterations)

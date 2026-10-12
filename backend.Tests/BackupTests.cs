@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using KiComLibBackend.Services;
 
 namespace KiComLibBackend.Tests;
 
@@ -54,7 +55,7 @@ public class BackupTests
         HttpResponseMessage file = await admin.GetAsync($"/api/backup/{id}/file");
         Assert.Equal(HttpStatusCode.OK, file.StatusCode);
         byte[] bytes = await file.Content.ReadAsByteArrayAsync();
-        Assert.Equal("KICOMLIBBK", Encoding.ASCII.GetString(bytes, 0, 8));
+        Assert.Equal("KICOMLIBBK", Encoding.ASCII.GetString(bytes, 0, BackupArchive.MagicText.Length));
         Assert.False(ContainsSequence(bytes, Encoding.ASCII.GetBytes(marker)));
 
         using MultipartFormDataContent upload = new();

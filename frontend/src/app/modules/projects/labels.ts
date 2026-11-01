@@ -66,6 +66,35 @@ export function bomStatusClass(status: string): string {
   }
 }
 
+export function orderStatusLabel(status: string): string {
+  switch (status) {
+    case 'ok':
+      return 'OK';
+    case 'alternative_mpn':
+      return 'Alternative MPN';
+    case 'alternative_part':
+      return 'Alternative Part';
+    case 'not_available':
+      return 'Not Available';
+    default:
+      return status;
+  }
+}
+
+export function orderStatusClass(status: string): string {
+  switch (status) {
+    case 'ok':
+      return 'badge-success';
+    case 'alternative_mpn':
+    case 'alternative_part':
+      return 'badge-warning';
+    case 'not_available':
+      return 'badge-destructive';
+    default:
+      return 'badge-muted';
+  }
+}
+
 export function isBomStatus(value: string): value is BomStatus {
   return value === 'ok'
     || value === 'eol'

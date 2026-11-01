@@ -161,8 +161,11 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
       next: project => {
         this.project = project;
         this.loading = false;
-        if (!this.selectedSha && project.headSha) {
-          this.applySelection(project.headSha, null);
+        if (!this.selectedSha) {
+          const sha = project.newestSha || project.headSha;
+          if (sha) {
+            this.applySelection(sha, null);
+          }
         }
         this.loadAccess();
       },

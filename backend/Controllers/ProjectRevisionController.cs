@@ -7,6 +7,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KiComLibBackend.Controllers
 {
+    public sealed class BomAvailabilityRequest
+    {
+        public int Pieces { get; set; }
+
+        public string? Group { get; set; }
+    }
+
     [Route("api/project")]
     [ApiController]
     public class ProjectRevisionController : ControllerBase
@@ -182,6 +189,34 @@ namespace KiComLibBackend.Controllers
             }
 
             return Ok(await _bom.LinesAsync(revision.Id, group, cancellationToken));
+        }
+
+        [HttpPost("{id:int}/revision/{sha}/bom/availability")]
+        public async Task<IActionResult> BomAvailability(
+            int id,
+            string sha,
+            [FromBody] BomAvailabilityRequest? request,
+            CancellationToken cancellationToken)
+        {
+            IActionResult? denied = await RequireReadAsync(id, cancellationToken);
+            if (denied != null)
+            {
+                return denied;
+            }
+
+            int pieces = request?.Pieces ?? 0;
+            if (pieces < 1 || pieces > 100000)
+            {
+                return BadRequest(new { error = "pieces must be between 1 and 100000" });
+            }
+
+            ProjectRevision? revision = await FindRevisionAsync(id, sha, cancellationToken);
+            if (revision == null)
+            {
+                return NotFound(new { error = "Revision not found" });
+            }
+
+            return Ok(await _bom.AvailabilityAsync(revision.Id, request?.Group, pieces, cancellationToken));
         }
 
         [HttpGet("{id:int}/diff")]

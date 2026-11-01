@@ -17,8 +17,11 @@ import {
   BomDiff,
   BomDiffItem,
   BomFieldChange,
+  BomAvailability,
+  BomAvailabilityLine,
   BomGroup,
   BomLine,
+  BomOrderStatus,
   BomStatus,
   ExportScope,
   PartUsage,
@@ -146,6 +149,13 @@ export class ProjectService {
     return this.http.get<unknown>(`${this.apiUrl}/project/${id}/revision/${encodeURIComponent(sha)}/bom`, { params }).pipe(
       map(body => readArray(body, 'lines', 'items', 'components').map(normalizeBomLine))
     );
+  }
+
+  bomAvailability(id: number, sha: string, group: BomGroup, pieces: number): Observable<BomAvailability> {
+    return this.http.post<unknown>(
+      `${this.apiUrl}/project/${id}/revision/${encodeURIComponent(sha)}/bom/availability`,
+      { pieces, group }
+    ).pipe(map(body => normalizeBomAvailability(body)));
   }
 
   pageUrl(id: number, sha: string, page: string): string {
@@ -284,6 +294,7 @@ function normalizeProjectDetail(body: unknown): ProjectDetail {
     projectFile: readString(row, 'projectFile', 'project_file'),
     exportScope: exportScope(readString(row, 'exportScope', 'export_scope')),
     headSha: readString(row, 'headSha', 'headCommitSha', 'head'),
+    newestSha: readString(row, 'newestSha', 'latestSha') || readString(row, 'headSha', 'headCommitSha', 'head'),
     webUrl: readString(row, 'webUrl') || (links ? readString(links, 'web', 'project') : '') || (repository ? readString(repository, 'webUrl') : ''),
     defaultBranch: readString(row, 'defaultBranch') || (repository ? readString(repository, 'defaultBranch') : ''),
     permissions: {
@@ -393,13 +404,43 @@ function normalizeBomLine(row: Record<string, unknown>): BomLine {
     footprint: readString(row, 'footprint'),
     mpn: readString(row, 'mpn'),
     manufacturer: readString(row, 'manufacturer'),
-    quantity: readNumber(row, 'quantity', 'qty') || 1,
+    quantity: readNumber(row, 'quantity', 'qty'),
     status: bomStatuses(row['status'] ?? row['catalogStatus']),
     dnp: readBool(row, 'dnp'),
     partId: part ? readNullableNumber(part, 'id') : readNullableNumber(row, 'partId'),
     partName: readString(row, 'partName') || (part ? readString(part, 'name') : ''),
     outdatedFields: Array.isArray(outdated) ? outdated.map(item => String(item)) : []
   };
+}
+
+function normalizeBomAvailability(body: unknown): BomAvailability {
+  const row = asRecord(body) ?? {};
+  const warnings = row['warnings'];
+  return {
+    pieces: readNumber(row, 'pieces') || 1,
+    warnings: Array.isArray(warnings) ? warnings.map(item => String(item)) : [],
+    lines: readArray(body, 'lines').map(normalizeBomAvailabilityLine)
+  };
+}
+
+function normalizeBomAvailabilityLine(row: Record<string, unknown>): BomAvailabilityLine {
+  return {
+    reference: readString(row, 'reference'),
+    manufacturer: readString(row, 'manufacturer'),
+    mpn: readString(row, 'mpn'),
+    totalQuantity: readNumber(row, 'totalQuantity', 'total'),
+    distributor: readString(row, 'distributor'),
+    orderNumber: readString(row, 'orderNumber'),
+    orderStatus: orderStatus(readString(row, 'orderStatus', 'status')),
+    limited: readBool(row, 'limited')
+  };
+}
+
+function orderStatus(value: string): BomOrderStatus {
+  if (value === 'ok' || value === 'alternative_mpn' || value === 'alternative_part' || value === 'not_available') {
+    return value;
+  }
+  return '';
 }
 
 function normalizeDiffItem(row: Record<string, unknown>): BomDiffItem {

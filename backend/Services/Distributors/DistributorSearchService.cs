@@ -79,6 +79,7 @@ namespace KiComLibBackend.Services.Distributors
         private readonly ArrowClient _arrow;
         private readonly TmeClient _tme;
         private readonly ILogger<DistributorSearchService> _logger;
+        private Task<DistributorAvailability>? _availability;
 
         public DistributorSearchService(
             DistributorSettingsService settings,
@@ -141,7 +142,7 @@ namespace KiComLibBackend.Services.Distributors
             catch (Exception exception)
             {
                 LogFailure(id, exception);
-                return KeywordSearchOutcome.BadGateway(id, "The distributor request failed");
+                return KeywordSearchOutcome.BadGateway(id, FailureMessage(exception));
             }
         }
 
@@ -181,7 +182,7 @@ namespace KiComLibBackend.Services.Distributors
             catch (Exception exception)
             {
                 LogFailure(access.Provider, exception);
-                return DistributorTestOutcome.BadRequest("The distributor request failed");
+                return DistributorTestOutcome.BadRequest(FailureMessage(exception));
             }
         }
 
@@ -347,6 +348,90 @@ namespace KiComLibBackend.Services.Distributors
             return new MultiSearchOutcome { Results = results, Errors = errors };
         }
 
+        /// <summary>Part search against one provider, including stock when that API reports it.</summary>
+        public async Task<IReadOnlyList<DistributorProduct>> OffersAsync(
+            string provider,
+            string manufacturerPartNumber,
+            CancellationToken cancellationToken)
+        {
+            string? id = DistributorProviders.Canonical(provider);
+            string mpn = (manufacturerPartNumber ?? "").Trim();
+            if (id == null || mpn.Length == 0)
+            {
+                return Array.Empty<DistributorProduct>();
+            }
+
+            DistributorAvailability availability = await AvailabilityAsync(cancellationToken);
+            if (!availability.IsUsable(id))
+            {
+                return Array.Empty<DistributorProduct>();
+            }
+
+            return await SearchPartAsync(id, availability, mpn, cancellationToken);
+        }
+
+        /// <summary>One Mouser search for several manufacturer part numbers. The client packs them into batches of ten.</summary>
+        public async Task<IReadOnlyDictionary<string, IReadOnlyList<DistributorProduct>>> MouserOffersAsync(
+            IReadOnlyList<string> partNumbers,
+            CancellationToken cancellationToken)
+        {
+            DistributorAvailability availability = await AvailabilityAsync(cancellationToken);
+            if (!availability.IsUsable(DistributorProviders.Mouser) || availability.Mouser == null)
+            {
+                return new Dictionary<string, IReadOnlyList<DistributorProduct>>();
+            }
+
+            return await _mouser.SearchPartsAsync(availability.Mouser.ApiKey, partNumbers, cancellationToken);
+        }
+
+        /// <summary>One element14 search for several manufacturer part numbers. The client packs them into batches of ten.</summary>
+        public async Task<IReadOnlyDictionary<string, IReadOnlyList<DistributorProduct>>> FarnellOffersAsync(
+            IReadOnlyList<string> partNumbers,
+            CancellationToken cancellationToken)
+        {
+            DistributorAvailability availability = await AvailabilityAsync(cancellationToken);
+            if (!availability.IsUsable(DistributorProviders.Farnell) || availability.Farnell == null)
+            {
+                return new Dictionary<string, IReadOnlyList<DistributorProduct>>();
+            }
+
+            return await _farnell.SearchPartsAsync(availability.Farnell, partNumbers, cancellationToken);
+        }
+
+        /// <summary>One Arrow Search By List call for several manufacturer part numbers.</summary>
+        public async Task<IReadOnlyDictionary<string, IReadOnlyList<DistributorProduct>>> ArrowOffersAsync(
+            IReadOnlyList<string> partNumbers,
+            CancellationToken cancellationToken)
+        {
+            DistributorAvailability availability = await AvailabilityAsync(cancellationToken);
+            if (!availability.IsUsable(DistributorProviders.Arrow) || availability.Arrow == null)
+            {
+                return new Dictionary<string, IReadOnlyList<DistributorProduct>>();
+            }
+
+            return await _arrow.SearchPartsAsync(availability.Arrow, partNumbers, cancellationToken);
+        }
+
+        public async Task<IReadOnlySet<string>> UsableProvidersAsync(CancellationToken cancellationToken)
+        {
+            DistributorAvailability availability = await AvailabilityAsync(cancellationToken);
+            HashSet<string> usable = new(StringComparer.OrdinalIgnoreCase);
+            foreach (KeyValuePair<string, bool> provider in availability.Enabled)
+            {
+                if (provider.Value)
+                {
+                    usable.Add(provider.Key);
+                }
+            }
+
+            return usable;
+        }
+
+        private Task<DistributorAvailability> AvailabilityAsync(CancellationToken cancellationToken)
+        {
+            return _availability ??= _settings.AvailabilityAsync(cancellationToken);
+        }
+
         private async Task<IReadOnlyList<DistributorProduct>> SearchKeywordAsync(
             string provider,
             DistributorAvailability availability,
@@ -399,7 +484,7 @@ namespace KiComLibBackend.Services.Distributors
             catch (Exception exception)
             {
                 LogFailure(provider, exception);
-                return new ProviderBatch(provider, manufacturerPartNumber, Array.Empty<DistributorProduct>(), "The distributor request failed");
+                return new ProviderBatch(provider, manufacturerPartNumber, Array.Empty<DistributorProduct>(), FailureMessage(exception));
             }
         }
 
@@ -438,6 +523,16 @@ namespace KiComLibBackend.Services.Distributors
             }
 
             return product.Manufacturer.Equals(manufacturer, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string FailureMessage(Exception exception)
+        {
+            if (exception is DistributorUpstreamException && !string.IsNullOrWhiteSpace(exception.Message))
+            {
+                return exception.Message.Trim();
+            }
+
+            return "The distributor request failed";
         }
 
         private void LogFailure(string provider, Exception exception)

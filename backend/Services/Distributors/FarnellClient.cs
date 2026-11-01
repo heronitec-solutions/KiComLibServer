@@ -7,6 +7,9 @@ namespace KiComLibBackend.Services.Distributors
         public const string HttpClientName = "farnell";
         public const string CatalogUrl = "https://api.element14.com/catalog/products";
 
+        /// <summary>element14 accepts several manufacturer part numbers, separated by a pipe, in one term.</summary>
+        public const int PartBatchLimit = 10;
+
         private readonly IHttpClientFactory _http;
         private readonly ILogger<FarnellClient> _logger;
 
@@ -29,13 +32,14 @@ namespace KiComLibBackend.Services.Distributors
                 DistributorProviders.Farnell,
                 request,
                 _logger,
+                DescribeFailure,
                 cancellationToken);
             try
             {
                 IReadOnlyList<DistributorProduct> products = Parse(response);
                 if (products.Count == 0 && IsError(response))
                 {
-                    throw new DistributorUpstreamException(DistributorProviders.Farnell, "The distributor request failed");
+                    throw Rejected(response);
                 }
 
                 return products;
@@ -51,6 +55,43 @@ namespace KiComLibBackend.Services.Distributors
             }
         }
 
+        /// <summary>
+        /// Looks up many manufacturer part numbers. Each call carries up to <see cref="PartBatchLimit"/>
+        /// numbers so a rate limit covers more of the BOM.
+        /// </summary>
+        public async Task<IReadOnlyDictionary<string, IReadOnlyList<DistributorProduct>>> SearchPartsAsync(
+            FarnellAccess access,
+            IReadOnlyList<string> partNumbers,
+            CancellationToken cancellationToken)
+        {
+            Dictionary<string, IReadOnlyList<DistributorProduct>> found = new(StringComparer.OrdinalIgnoreCase);
+            foreach (IReadOnlyList<string> batch in PackQueries(partNumbers))
+            {
+                string url = PartNumbersUrl(access.Store, access.ApiKey, batch);
+                using HttpRequestMessage request = new(HttpMethod.Get, url);
+                string response = await DistributorHttp.SendAsync(
+                    _http,
+                    HttpClientName,
+                    DistributorProviders.Farnell,
+                    request,
+                    _logger,
+                    DescribeFailure,
+                    cancellationToken);
+                foreach (KeyValuePair<string, IReadOnlyList<DistributorProduct>> pair in Assign(response, batch))
+                {
+                    found[pair.Key] = pair.Value;
+                }
+            }
+
+            return found;
+        }
+
+        /// <summary>Packs part numbers into element14 searches of at most <see cref="PartBatchLimit"/>.</summary>
+        public static IReadOnlyList<IReadOnlyList<string>> PackQueries(IReadOnlyList<string> partNumbers)
+        {
+            return PartBatches.Chunk(partNumbers, PartBatchLimit, part => part.Contains('|'));
+        }
+
         public static string SearchUrl(string store, string apiKey, string query)
         {
             return CatalogUrl
@@ -62,6 +103,64 @@ namespace KiComLibBackend.Services.Distributors
                 + "&callInfo.omitXmlSchema=false"
                 + "&callInfo.responseDataFormat=JSON"
                 + "&callInfo.apiKey=" + Uri.EscapeDataString(apiKey);
+        }
+
+        public static string PartNumbersUrl(string store, string apiKey, IReadOnlyList<string> partNumbers)
+        {
+            string term = "manuPartNum:" + string.Join("|", partNumbers.Select(part => Uri.EscapeDataString(part.Trim())));
+            return CatalogUrl
+                + "?term=" + term
+                + "&storeInfo.id=" + Uri.EscapeDataString(store)
+                + "&resultsSettings.offset=0"
+                + "&resultsSettings.numberOfResults=100"
+                + "&resultsSettings.responseGroup=medium"
+                + "&callInfo.omitXmlSchema=false"
+                + "&callInfo.responseDataFormat=JSON"
+                + "&callInfo.apiKey=" + Uri.EscapeDataString(apiKey);
+        }
+
+        public static IReadOnlyDictionary<string, IReadOnlyList<DistributorProduct>> Assign(
+            string json,
+            IReadOnlyList<string> queries)
+        {
+            if (IsError(json))
+            {
+                throw Rejected(json);
+            }
+
+            Dictionary<string, List<DistributorProduct>> assigned = new(StringComparer.OrdinalIgnoreCase);
+            foreach (string query in queries)
+            {
+                string trimmed = query.Trim();
+                if (trimmed.Length > 0)
+                {
+                    assigned.TryAdd(trimmed, new List<DistributorProduct>());
+                }
+            }
+
+            foreach (DistributorProduct product in Parse(json))
+            {
+                string? key = queries.FirstOrDefault(query => Same(query, product.ManufacturerPartNumber));
+                if (key == null || !assigned.TryGetValue(key.Trim(), out List<DistributorProduct>? list))
+                {
+                    continue;
+                }
+
+                list.Add(product);
+            }
+
+            Dictionary<string, IReadOnlyList<DistributorProduct>> result = new(StringComparer.OrdinalIgnoreCase);
+            foreach (KeyValuePair<string, List<DistributorProduct>> pair in assigned)
+            {
+                result[pair.Key] = pair.Value;
+            }
+
+            return result;
+        }
+
+        public static string? DescribeFailure(int statusCode, string? body)
+        {
+            return DistributorFailure.Describe(statusCode, DistributorFailure.ReadMessage(body));
         }
 
         public static IReadOnlyList<DistributorProduct> Parse(string json)
@@ -164,7 +263,34 @@ namespace KiComLibBackend.Services.Distributors
                 null,
                 DistributorJson.Text(product, "sku"),
                 DistributorJson.Int(product, "translatedMinimumOrderQuality", "translatedMinimumOrderQuantity"),
-                steps);
+                steps,
+                quantityAvailable: StockLevel(product));
+        }
+
+        private static int? StockLevel(JsonElement product)
+        {
+            int? direct = DistributorJson.Int(product, "inv", "stockLevel");
+            if (direct != null)
+            {
+                return direct;
+            }
+
+            if (!DistributorJson.Try(product, "stock", out JsonElement stock))
+            {
+                return null;
+            }
+
+            if (stock.ValueKind == JsonValueKind.Number)
+            {
+                return DistributorJson.Int(product, "stock");
+            }
+
+            if (stock.ValueKind == JsonValueKind.Object)
+            {
+                return DistributorJson.Int(stock, "level", "quantity");
+            }
+
+            return null;
         }
 
         private static string? ProductUrl(JsonElement product)
@@ -204,6 +330,18 @@ namespace KiComLibBackend.Services.Distributors
             }
 
             return null;
+        }
+
+        private static DistributorUpstreamException Rejected(string json)
+        {
+            return new DistributorUpstreamException(
+                DistributorProviders.Farnell,
+                DescribeFailure(200, json) ?? "The distributor request failed");
+        }
+
+        private static bool Same(string? left, string? right)
+        {
+            return string.Equals((left ?? "").Trim(), (right ?? "").Trim(), StringComparison.OrdinalIgnoreCase);
         }
     }
 }

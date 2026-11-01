@@ -131,6 +131,65 @@ namespace KiComLibBackend.Services.Distributors
             return false;
         }
 
+        /// <summary>
+        /// First integer in a stock phrase such as "1,234 In Stock". Thousands separators are kept;
+        /// a phrase with no digits (for example "On Order") is unknown.
+        /// </summary>
+        public static int? CountInText(string? text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return null;
+            }
+
+            int index = 0;
+            while (index < text.Length && !char.IsDigit(text[index]))
+            {
+                index++;
+            }
+
+            if (index >= text.Length)
+            {
+                return null;
+            }
+
+            long value = 0;
+            bool any = false;
+            while (index < text.Length)
+            {
+                char character = text[index];
+                if (char.IsDigit(character))
+                {
+                    any = true;
+                    value = (value * 10) + (character - '0');
+                    if (value > int.MaxValue)
+                    {
+                        return int.MaxValue;
+                    }
+
+                    index++;
+                    continue;
+                }
+
+                bool separator = character is ',' or '.' or ' ' or '\u00A0';
+                if (separator
+                    && any
+                    && index + 4 <= text.Length
+                    && char.IsDigit(text[index + 1])
+                    && char.IsDigit(text[index + 2])
+                    && char.IsDigit(text[index + 3])
+                    && (index + 4 == text.Length || !char.IsDigit(text[index + 4])))
+                {
+                    index++;
+                    continue;
+                }
+
+                break;
+            }
+
+            return any ? (int)value : null;
+        }
+
         public static JsonElement? Array(JsonElement element, params string[] names)
         {
             foreach (string name in names)

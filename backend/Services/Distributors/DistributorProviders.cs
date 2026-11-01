@@ -79,5 +79,26 @@ namespace KiComLibBackend.Services.Distributors
 
             return null;
         }
+
+        /// <summary>Provider id for a catalog distributor name, when that distributor has an API.</summary>
+        public static string? ProviderForDistributor(string? distributorName)
+        {
+            if (string.IsNullOrWhiteSpace(distributorName))
+            {
+                return null;
+            }
+
+            string trimmed = distributorName.Trim();
+            foreach (DistributorProviderInfo provider in All)
+            {
+                if (provider.DistributorName.Equals(trimmed, StringComparison.OrdinalIgnoreCase)
+                    || provider.Name.Equals(trimmed, StringComparison.OrdinalIgnoreCase))
+                {
+                    return provider.Id;
+                }
+            }
+
+            return null;
+        }
     }
 }

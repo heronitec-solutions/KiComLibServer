@@ -10,7 +10,9 @@ namespace KiComLibBackend.Services.Distributors
         public const string TokenUrl = "https://api.tme.eu/auth/token";
         public const string SearchUrl = "https://api.tme.eu/products/search";
         public const string FilesUrl = "https://api.tme.eu/products/files";
+        public const string PricesUrl = "https://api.tme.eu/products/prices";
         public const int DetailLimit = 10;
+        public const int StockBatch = 10;
 
         private readonly IHttpClientFactory _http;
         private readonly ILogger<TmeClient> _logger;
@@ -24,6 +26,10 @@ namespace KiComLibBackend.Services.Distributors
             _logger = logger;
         }
 
+        /// <summary>
+        /// Product search accepts one phrase. Availability therefore calls TME once per part number
+        /// and stops after a limit error. Stock for the symbols from one search is already requested in batches.
+        /// </summary>
         public async Task<IReadOnlyList<DistributorProduct>> SearchAsync(
             TmeAccess access,
             string query,
@@ -53,6 +59,17 @@ namespace KiComLibBackend.Services.Distributors
             if (symbols.Count > 0)
             {
                 products = await MergeFilesAsync(access, token, products, symbols, cancellationToken);
+            }
+
+            List<string> stockSymbols = products
+                .Select(product => product.OrderNumber)
+                .Where(symbol => !string.IsNullOrWhiteSpace(symbol))
+                .Select(symbol => symbol!)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (stockSymbols.Count > 0)
+            {
+                products = await MergeStockAsync(access, token, products, stockSymbols, cancellationToken);
             }
 
             return products;
@@ -91,6 +108,11 @@ namespace KiComLibBackend.Services.Distributors
             }
 
             return found;
+        }
+
+        public static string? DescribeFailure(int statusCode, string? body)
+        {
+            return DistributorFailure.Describe(statusCode, DistributorFailure.ReadMessage(body) ?? StatusText(body));
         }
 
         public static bool IsError(string json)
@@ -170,6 +192,135 @@ namespace KiComLibBackend.Services.Distributors
             return urls;
         }
 
+        public static IReadOnlyDictionary<string, int> ParseStock(string json)
+        {
+            Dictionary<string, int> stock = new(StringComparer.OrdinalIgnoreCase);
+            using JsonDocument document = JsonDocument.Parse(json);
+            JsonElement owner = document.RootElement;
+            if (DistributorJson.Try(owner, "data", out JsonElement data) && data.ValueKind == JsonValueKind.Object)
+            {
+                owner = data;
+            }
+
+            JsonElement? elements = DistributorJson.Array(owner, "elements");
+            if (elements == null)
+            {
+                return stock;
+            }
+
+            foreach (JsonElement item in elements.Value.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                string? symbol = DistributorJson.Text(item, "symbol");
+                int? amount = DistributorJson.Int(item, "amount");
+                if (symbol == null || amount is null or < 0)
+                {
+                    continue;
+                }
+
+                stock[symbol] = amount.Value;
+            }
+
+            return stock;
+        }
+
+        private async Task<List<DistributorProduct>> MergeStockAsync(
+            TmeAccess access,
+            string token,
+            List<DistributorProduct> products,
+            List<string> symbols,
+            CancellationToken cancellationToken)
+        {
+            Dictionary<string, int> stock = new(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                for (int offset = 0; offset < symbols.Count; offset += StockBatch)
+                {
+                    List<string> batch = symbols.Skip(offset).Take(StockBatch).ToList();
+                    string response = await GetAsync(PricesAddress(access, batch), token, access.Language, cancellationToken);
+                    if (IsError(response))
+                    {
+                        throw new DistributorUpstreamException(
+                            DistributorProviders.Tme,
+                            DescribeFailure(200, response) ?? "The distributor request failed");
+                    }
+
+                    foreach (KeyValuePair<string, int> row in ParseStock(response))
+                    {
+                        stock[row.Key] = row.Value;
+                    }
+                }
+            }
+            catch (DistributorUpstreamException)
+            {
+                throw;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(exception, "Distributor {Provider} stock lookup failed", DistributorProviders.Tme);
+            }
+
+            if (stock.Count == 0)
+            {
+                return products;
+            }
+
+            List<DistributorProduct> merged = new(products.Count);
+            foreach (DistributorProduct product in products)
+            {
+                if (product.OrderNumber != null && stock.TryGetValue(product.OrderNumber, out int available))
+                {
+                    merged.Add(product.WithQuantityAvailable(available));
+                }
+                else
+                {
+                    merged.Add(product);
+                }
+            }
+
+            return merged;
+        }
+
+        private static string PricesAddress(TmeAccess access, IReadOnlyList<string> symbols)
+        {
+            StringBuilder builder = new(PricesUrl);
+            builder.Append("?country=");
+            builder.Append(Uri.EscapeDataString(access.Country));
+            builder.Append("&currency=");
+            builder.Append(Uri.EscapeDataString(Currency(access.Country)));
+            foreach (string symbol in symbols)
+            {
+                builder.Append("&symbol[]=");
+                builder.Append(Uri.EscapeDataString(symbol));
+            }
+
+            return builder.ToString();
+        }
+
+        private static string Currency(string country)
+        {
+            return country.Trim().ToUpperInvariant() switch
+            {
+                "US" => "USD",
+                "GB" or "UK" => "GBP",
+                "PL" => "PLN",
+                "CZ" => "CZK",
+                "CH" => "CHF",
+                "HU" => "HUF",
+                "RO" => "RON",
+                "SE" => "SEK",
+                _ => "EUR"
+            };
+        }
+
         private async Task<List<DistributorProduct>> MergeFilesAsync(
             TmeAccess access,
             string token,
@@ -219,6 +370,7 @@ namespace KiComLibBackend.Services.Distributors
                 DistributorProviders.Tme,
                 request,
                 _logger,
+                DescribeFailure,
                 cancellationToken);
             try
             {
@@ -226,7 +378,9 @@ namespace KiComLibBackend.Services.Distributors
                 string? token = DistributorJson.Text(document.RootElement, "access_token");
                 if (string.IsNullOrWhiteSpace(token))
                 {
-                    throw new DistributorUpstreamException(DistributorProviders.Tme, "The distributor request failed");
+                    throw new DistributorUpstreamException(
+                        DistributorProviders.Tme,
+                        DescribeFailure(200, response) ?? "The distributor request failed");
                 }
 
                 int lifetime = DistributorJson.Int(document.RootElement, "expires_in") ?? 60;
@@ -265,6 +419,7 @@ namespace KiComLibBackend.Services.Distributors
                 DistributorProviders.Tme,
                 request,
                 _logger,
+                DescribeFailure,
                 cancellationToken);
         }
 
@@ -297,7 +452,33 @@ namespace KiComLibBackend.Services.Distributors
             if (IsError(json))
             {
                 _logger.LogWarning("Distributor {Provider} rejected the search", DistributorProviders.Tme);
-                throw new DistributorUpstreamException(DistributorProviders.Tme, "The distributor request failed");
+                throw new DistributorUpstreamException(
+                    DistributorProviders.Tme,
+                    DescribeFailure(200, json) ?? "The distributor request failed");
+            }
+        }
+
+        private static string? StatusText(string? body)
+        {
+            if (string.IsNullOrWhiteSpace(body))
+            {
+                return null;
+            }
+
+            try
+            {
+                using JsonDocument document = JsonDocument.Parse(body);
+                string? status = DistributorJson.Text(document.RootElement, "status");
+                if (string.IsNullOrWhiteSpace(status) || status.Equals("OK", StringComparison.OrdinalIgnoreCase))
+                {
+                    return null;
+                }
+
+                return status.Trim();
+            }
+            catch (JsonException)
+            {
+                return null;
             }
         }
 

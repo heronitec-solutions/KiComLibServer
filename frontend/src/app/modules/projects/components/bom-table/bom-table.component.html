@@ -1,22 +1,60 @@
-<div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
-  <label class="flex flex-col gap-1 text-sm text-gray-300">
-    Grouping
-    <select class="input-dark" [ngModel]="group" (ngModelChange)="onGroup($event)">
-      <option value="part">By catalog part</option>
-      <option value="none">Each component</option>
-    </select>
-  </label>
-  <label class="mt-6 flex items-center gap-2 text-sm text-gray-300">
-    <input type="checkbox" [(ngModel)]="problemsOnly" />
-    <span>Problems only</span>
-  </label>
+<div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+  <div class="flex flex-col gap-3 md:flex-row md:items-center">
+    <label class="flex flex-col gap-1 text-sm text-gray-300">
+      Grouping
+      <select class="input-dark" [ngModel]="group" (ngModelChange)="onGroup($event)">
+        <option value="part">By catalog part</option>
+        <option value="none">Each component</option>
+      </select>
+    </label>
+    <label class="mt-6 flex items-center gap-2 text-sm text-gray-300">
+      <input type="checkbox" [(ngModel)]="problemsOnly" />
+      <span>Problems only</span>
+    </label>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <button type="button" class="btn-outline" [matMenuTriggerFor]="exportMenu" [disabled]="!sha">Export</button>
+    <mat-menu #exportMenu="matMenu">
+      <button type="button" mat-menu-item (click)="exportTable('csv')">CSV</button>
+      <button type="button" mat-menu-item (click)="exportTable('html')">HTML</button>
+    </mat-menu>
+    <button
+      type="button"
+      class="btn-primary"
+      (click)="checkAvailability()"
+      [disabled]="checking || !sha || !projectId"
+    >{{ checking ? 'Checking…' : 'Check Availability' }}</button>
+    <span class="text-sm text-gray-300">for</span>
+    <span class="inline-block w-20">
+      <input
+        class="input-dark"
+        type="number"
+        min="1"
+        step="1"
+        name="pieces"
+        aria-label="Number of boards"
+        [(ngModel)]="pieces"
+      />
+    </span>
+    <span class="text-sm text-gray-300">pieces</span>
+  </div>
 </div>
 
 @if (error) {
   <p class="mb-4 text-sm text-red-400">{{ error }}</p>
 }
+@if (warnings.length) {
+  <div class="mb-4 text-sm text-yellow-200">
+    @for (warning of warnings; track warning) {
+      <p class="m-0">{{ warning }}</p>
+    }
+  </div>
+}
 @if (loading) {
   <p class="mb-4 text-sm text-gray-400">Loading bill of materials…</p>
+}
+@if (checking) {
+  <p class="mb-4 text-sm text-gray-400">Checking availability…</p>
 }
 @if (!sha) {
   <p class="text-sm text-gray-400">Select a revision to see its bill of materials.</p>
@@ -37,13 +75,21 @@
         <th mat-header-cell *matHeaderCellDef> Footprint </th>
         <td mat-cell *matCellDef="let row" class="mono-cell">{{ row.footprint || '—' }}</td>
       </ng-container>
+      <ng-container matColumnDef="manufacturer">
+        <th mat-header-cell *matHeaderCellDef> Manufacturer </th>
+        <td mat-cell *matCellDef="let row">{{ row.manufacturerDisplay || '—' }}</td>
+      </ng-container>
       <ng-container matColumnDef="mpn">
         <th mat-header-cell *matHeaderCellDef> MPN </th>
-        <td mat-cell *matCellDef="let row" class="mono-cell">{{ row.mpn || '—' }}</td>
+        <td mat-cell *matCellDef="let row" class="mono-cell">{{ row.mpnDisplay || '—' }}</td>
       </ng-container>
       <ng-container matColumnDef="quantity">
         <th mat-header-cell *matHeaderCellDef> Qty </th>
         <td mat-cell *matCellDef="let row">{{ row.quantity }}</td>
+      </ng-container>
+      <ng-container matColumnDef="totalQuantity">
+        <th mat-header-cell *matHeaderCellDef> Total Qty </th>
+        <td mat-cell *matCellDef="let row">{{ row.totalQuantity }}</td>
       </ng-container>
       <ng-container matColumnDef="status">
         <th mat-header-cell *matHeaderCellDef> Status </th>
@@ -68,6 +114,28 @@
             </button>
           }
           @if (!row.partId) {
+            <span>—</span>
+          }
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="distributor">
+        <th mat-header-cell *matHeaderCellDef> Distributor </th>
+        <td mat-cell *matCellDef="let row">{{ row.distributor || '—' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="orderNumber">
+        <th mat-header-cell *matHeaderCellDef> Order-Number </th>
+        <td mat-cell *matCellDef="let row" class="mono-cell">{{ row.orderNumber || '—' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="orderStatus">
+        <th mat-header-cell *matHeaderCellDef> Order Status </th>
+        <td mat-cell *matCellDef="let row">
+          @if (row.orderStatus) {
+            <span class="badge mr-1" [ngClass]="orderStatusClass(row.orderStatus)">{{ orderStatusLabel(row.orderStatus) }}</span>
+          }
+          @if (row.limited) {
+            <span class="badge badge-warning">Limited</span>
+          }
+          @if (!row.orderStatus && !row.limited) {
             <span>—</span>
           }
         </td>

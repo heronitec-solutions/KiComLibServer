@@ -27,6 +27,7 @@ export interface ProjectDetail extends ProjectSummary {
   projectFile: string;
   exportScope: ExportScope;
   headSha: string;
+  newestSha: string;
   webUrl: string;
   defaultBranch: string;
   permissions: ProjectPermissions;
@@ -105,6 +106,25 @@ export interface BomLine {
   partId: number | null;
   partName: string;
   outdatedFields: string[];
+}
+
+export type BomOrderStatus = '' | 'ok' | 'alternative_mpn' | 'alternative_part' | 'not_available';
+
+export interface BomAvailabilityLine {
+  reference: string;
+  manufacturer: string;
+  mpn: string;
+  totalQuantity: number;
+  distributor: string;
+  orderNumber: string;
+  orderStatus: BomOrderStatus;
+  limited: boolean;
+}
+
+export interface BomAvailability {
+  pieces: number;
+  warnings: string[];
+  lines: BomAvailabilityLine[];
 }
 
 export interface BomFieldChange {

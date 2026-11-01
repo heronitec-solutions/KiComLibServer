@@ -34,6 +34,9 @@ namespace KiComLibBackend.Services.Distributors
 
         public int? QuantitySteps { get; init; }
 
+        /// <summary>Pieces the distributor currently has for this order number, when the API reports stock.</summary>
+        public int? QuantityAvailable { get; init; }
+
         [JsonIgnore]
         public int? SourceQuantityMin { get; init; }
 
@@ -53,7 +56,8 @@ namespace KiComLibBackend.Services.Distributors
             string? orderNumber,
             int? quantityMin,
             int? quantitySteps,
-            string? imageUrl = null)
+            string? imageUrl = null,
+            int? quantityAvailable = null)
         {
             string? order = Clean(orderNumber);
             int? sourceMin = quantityMin is > 0 ? quantityMin : null;
@@ -81,6 +85,7 @@ namespace KiComLibBackend.Services.Distributors
                 OrderNumber = order,
                 QuantityMin = min,
                 QuantitySteps = steps,
+                QuantityAvailable = quantityAvailable is >= 0 ? quantityAvailable : null,
                 SourceQuantityMin = sourceMin,
                 SourceQuantitySteps = sourceSteps
             };
@@ -99,9 +104,29 @@ namespace KiComLibBackend.Services.Distributors
                 LifecycleStatus,
                 Package,
                 OrderNumber,
-                QuantityMin,
-                QuantitySteps,
-                ImageUrl);
+                SourceQuantityMin,
+                SourceQuantitySteps,
+                ImageUrl,
+                QuantityAvailable);
+        }
+
+        public DistributorProduct WithQuantityAvailable(int? quantityAvailable)
+        {
+            return Create(
+                Provider,
+                DistributorName ?? "",
+                Manufacturer,
+                ManufacturerPartNumber,
+                Description,
+                DatasheetUrl,
+                ProductUrl,
+                LifecycleStatus,
+                Package,
+                OrderNumber,
+                SourceQuantityMin,
+                SourceQuantitySteps,
+                ImageUrl,
+                quantityAvailable);
         }
 
         /// <summary>

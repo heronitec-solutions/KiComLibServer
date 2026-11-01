@@ -409,9 +409,30 @@ namespace KiComLibBackend.Controllers
             CallerContext caller = CallerContext.Current(HttpContext);
             int revisions = await _db.ProjectRevisions.CountAsync(r => r.ProjectId == id, cancellationToken);
             int components = 0;
+            string headSha = "";
             if (project.HeadRevisionId != null)
             {
                 components = await _db.ProjectComponents.CountAsync(c => c.RevisionId == project.HeadRevisionId, cancellationToken);
+                headSha = await _db.ProjectRevisions
+                    .Where(r => r.Id == project.HeadRevisionId)
+                    .Select(r => r.CommitSha)
+                    .FirstOrDefaultAsync(cancellationToken) ?? "";
+            }
+
+            string newestSha = await _db.ProjectRevisions
+                .Where(r => r.ProjectId == id && r.Reachable)
+                .OrderByDescending(r => r.CommittedAt)
+                .ThenByDescending(r => r.Id)
+                .Select(r => r.CommitSha)
+                .FirstOrDefaultAsync(cancellationToken) ?? "";
+            if (newestSha.Length == 0)
+            {
+                newestSha = await _db.ProjectRevisions
+                    .Where(r => r.ProjectId == id)
+                    .OrderByDescending(r => r.CommittedAt)
+                    .ThenByDescending(r => r.Id)
+                    .Select(r => r.CommitSha)
+                    .FirstOrDefaultAsync(cancellationToken) ?? "";
             }
 
             IGitProviderAdapter? adapter = project.Repository?.Host == null
@@ -432,6 +453,8 @@ namespace KiComLibBackend.Controllers
                 ownerUserId = project.OwnerUserId,
                 ownerName = project.OwnerUserId != null && owners.TryGetValue(project.OwnerUserId.Value, out string? ownerName) ? ownerName : null,
                 headRevisionId = project.HeadRevisionId,
+                headSha,
+                newestSha,
                 isArchived = project.IsArchived,
                 permissions = new
                 {

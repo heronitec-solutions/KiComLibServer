@@ -46,10 +46,23 @@ namespace KiComLibBackend.Services.Distributors
                 DistributorProviders.DigiKey,
                 request,
                 _logger,
+                DescribeFailure,
                 cancellationToken);
             try
             {
-                return Parse(response);
+                IReadOnlyList<DistributorProduct> products = Parse(response);
+                if (products.Count == 0 && IsError(response))
+                {
+                    throw new DistributorUpstreamException(
+                        DistributorProviders.DigiKey,
+                        DescribeFailure(200, response) ?? "The distributor request failed");
+                }
+
+                return products;
+            }
+            catch (DistributorUpstreamException)
+            {
+                throw;
             }
             catch (JsonException)
             {
@@ -58,12 +71,46 @@ namespace KiComLibBackend.Services.Distributors
             }
         }
 
+        /// <summary>
+        /// Product Information v4 accepts one keyword per search. Availability therefore calls Digi-Key
+        /// once per part number and stops after a limit error instead of packing several parts together.
+        /// </summary>
         public Task<IReadOnlyList<DistributorProduct>> SearchPartAsync(
             DigiKeyAccess access,
             string manufacturerPartNumber,
             CancellationToken cancellationToken)
         {
             return SearchKeywordAsync(access, manufacturerPartNumber, cancellationToken);
+        }
+
+        public static string? DescribeFailure(int statusCode, string? body)
+        {
+            return DistributorFailure.Describe(statusCode, DistributorFailure.ReadMessage(body));
+        }
+
+        public static bool IsError(string json)
+        {
+            try
+            {
+                using JsonDocument document = JsonDocument.Parse(json);
+                if (DistributorJson.Array(document.RootElement, "Products") != null)
+                {
+                    return false;
+                }
+
+                return DistributorJson.Text(
+                        document.RootElement,
+                        "ErrorMessage",
+                        "errorMessage",
+                        "ErrorDetails",
+                        "error_description") != null
+                    || DistributorJson.Try(document.RootElement, "error", out _)
+                    || DistributorJson.Try(document.RootElement, "Error", out _);
+            }
+            catch (JsonException)
+            {
+                return true;
+            }
         }
 
         public static IReadOnlyList<DistributorProduct> Parse(string json)
@@ -109,6 +156,7 @@ namespace KiComLibBackend.Services.Distributors
                 DistributorProviders.DigiKey,
                 request,
                 _logger,
+                DescribeFailure,
                 cancellationToken);
             try
             {
@@ -116,7 +164,9 @@ namespace KiComLibBackend.Services.Distributors
                 string? token = DistributorJson.Text(document.RootElement, "access_token");
                 if (string.IsNullOrWhiteSpace(token))
                 {
-                    throw new DistributorUpstreamException(DistributorProviders.DigiKey, "The distributor request failed");
+                    throw new DistributorUpstreamException(
+                        DistributorProviders.DigiKey,
+                        DescribeFailure(200, response) ?? "The distributor request failed");
                 }
 
                 _accessToken = token;
@@ -169,6 +219,8 @@ namespace KiComLibBackend.Services.Distributors
         private static DistributorProduct MapOne(JsonElement product, JsonElement? variation)
         {
             string? status = Status(product);
+            int? stock = Quantity(product, variation, "QuantityAvailableforPackageType")
+                ?? Quantity(product, variation, "QuantityAvailable");
             return DistributorProduct.Create(
                 DistributorProviders.DigiKey,
                 DistributorNames.DigiKey,
@@ -182,7 +234,8 @@ namespace KiComLibBackend.Services.Distributors
                 OrderNumber(product, variation),
                 Quantity(product, variation, "MinimumOrderQuantity"),
                 Steps(product, variation),
-                DistributorJson.Text(product, "PhotoUrl"));
+                DistributorJson.Text(product, "PhotoUrl"),
+                stock);
         }
 
         private static string? Manufacturer(JsonElement product)

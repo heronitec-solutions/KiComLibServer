@@ -4,12 +4,24 @@ namespace KiComLibBackend.Services.Distributors
 {
     internal static class DistributorHttp
     {
+        public static Task<string> SendAsync(
+            IHttpClientFactory http,
+            string clientName,
+            string providerId,
+            HttpRequestMessage request,
+            ILogger logger,
+            CancellationToken cancellationToken)
+        {
+            return SendAsync(http, clientName, providerId, request, logger, null, cancellationToken);
+        }
+
         public static async Task<string> SendAsync(
             IHttpClientFactory http,
             string clientName,
             string providerId,
             HttpRequestMessage request,
             ILogger logger,
+            Func<int, string, string?>? describeFailure,
             CancellationToken cancellationToken)
         {
             if (!request.Headers.Accept.Any())
@@ -25,12 +37,25 @@ namespace KiComLibBackend.Services.Distributors
                 string body = await response.Content.ReadAsStringAsync(cancellationToken);
                 if (!response.IsSuccessStatusCode)
                 {
+                    string? reason = null;
+                    try
+                    {
+                        reason = describeFailure?.Invoke((int)response.StatusCode, body);
+                    }
+                    catch (Exception exception)
+                    {
+                        logger.LogWarning(exception, "Distributor {Provider} error response could not be read", providerId);
+                    }
+
                     logger.LogWarning(
-                        "Distributor {Provider} request failed with status {Status} for {Url}",
+                        "Distributor {Provider} request failed with status {Status} for {Url}: {Detail}",
                         providerId,
                         (int)response.StatusCode,
-                        DistributorLog.Sanitize(url));
-                    throw new DistributorUpstreamException(providerId, "The distributor request failed");
+                        DistributorLog.Sanitize(url),
+                        DistributorLog.Sanitize(reason));
+                    throw new DistributorUpstreamException(
+                        providerId,
+                        string.IsNullOrWhiteSpace(reason) ? "The distributor request failed" : reason.Trim());
                 }
 
                 return body;

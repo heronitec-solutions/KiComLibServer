@@ -8,6 +8,14 @@ namespace KiComLibBackend.Services.Distributors
             @"(?i)(apiKey|apikey|client_secret)=([^&#\s]*)",
             RegexOptions.Compiled);
 
+        private static readonly Regex SecretJson = new(
+            @"(?i)(""apikey""\s*:\s*"")[^""]*("")",
+            RegexOptions.Compiled);
+
+        private static readonly Regex SecretEncoded = new(
+            @"(?i)(apikey%22%3[Aa]%22)[^%&]*(%22)",
+            RegexOptions.Compiled);
+
         public static string Sanitize(string? text)
         {
             if (string.IsNullOrEmpty(text))
@@ -15,7 +23,9 @@ namespace KiComLibBackend.Services.Distributors
                 return "";
             }
 
-            return SecretQuery.Replace(text, "$1=***");
+            string hidden = SecretQuery.Replace(text, "$1=***");
+            hidden = SecretJson.Replace(hidden, "$1***$2");
+            return SecretEncoded.Replace(hidden, "$1***$2");
         }
     }
 
